@@ -1,0 +1,210 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - Supporto voce locale - Blueprint
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_it.yaml
+  description: " ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # Riproduci contenuti multimediali tramite comandi vocali
+    
+    ### Configurazione Blueprint
+    
+    #### Obbligatorio
+    
+    * Imposta un `Lettore predefinito` da utilizzare quando nella richiesta non viene menzionato alcun target
+    e la richiesta non proviene da un'area con un lettore Music Assistant.
+    
+    #### Facoltativo
+    
+    * Modifica la frase di attivazione o aggiungine altre, puoi anche utilizzare questo per tradurre
+    la frase nella tua lingua.
+    
+    * Modifica le risposte o traducile nella tua lingua.
+    
+    ### Utilizzo
+    
+    Tutte le frasi devono:
+    
+    * iniziare con le parole `Play` o `Listen to` seguite dal tipo di elemento `artist`/`track`/`album`/`playlist`/`radio`
+    e poi dal nome dell'elemento
+    
+    * per album e track essere facoltativamente seguito da `by [the] artist` e poi dal
+    nome dell'artista
+    
+    * quindi essere facoltativamente seguito da un nome di area o di dispositivo
+    
+    * quindi, per artist, track, album o playlist, essere facoltativamente seguito dalla frase
+    
+    `using radio mode`
+    
+    #### Variazioni accettate
+    
+    l'uso dell'articolo `the` è facoltativo
+    
+    |Tipo di media|Variazioni accettate|
+    
+    |---|---|
+    
+    |`artista`|`band`, `gruppo`|
+    
+    |`track`|`song`|
+    
+    |`radio`|`stazione radio`, `radio`|
+    
+    |`playlist`||
+    
+    #### Esempi
+    
+    ```
+    
+    Ascolta l'artista Pink Floyd in cucina
+    
+    Ascolta l'album Jagged Little Pill nello studio
+    
+    Ascolta l'album Greatest Hits dell'artista James Taylor in cucina
+    
+    Ascolta la traccia New Years Day in camera da letto
+    
+    Ascolta la traccia New Years Day in camera da letto usando la modalità radio
+    
+    Ascolta la canzone A Hard Days Night di Billy Joel in camera da letto
+    
+    Ascolta la playlist Classic Rock nello studio
+    
+    Ascolta la stazione radio BBC Radio 1 in camera da letto
+    
+    Ascolta l'album Classical Nights sullo speaker Sonos della camera da letto
+    
+    Ascolta il disco Classical Nights sullo speaker Sonos della camera da letto
+    
+    Ascolta la band U2
+    ```"
+  input:
+    default_player_entity_id_input:
+      name: Default Media Player
+      selector:
+        entity:
+          filter:
+          - integration: music_assistant
+            domain:
+            - media_player
+          multiple: false
+    trigger_response_settings:
+      name: Trigger and response settings for Assist
+      icon: mdi:chat
+      description: "Puoi modificare i trigger esistenti o aggiungerne altri in queste
+      impostazioni. Inserisci il testo tra parentesi quadre [ ] per renderlo facoltativo. Con parentesi tonde ( ) e un carattere barra verticale | puoi immettere più valori che vengono
+      trattati come ''o''. { query } è un valore jolly che conterrà il
+      media richiesto e, facoltativamente, l'area o il player di Music Assistant.
+        
+      Puoi anche impostare le risposte che Assist fornirà. Utilizza modelli jinja che
+      saranno sostituiti con le informazioni sul media e il nome del player di Music Assistant."
+      collapsed: true
+      input:
+        album_trigger:
+          name: Album trigger
+          description: Le frasi di attivazione per richiedere un album specifico.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+            - "(riproduci|ascolta) [(l'|il|la) ](album|ep|disco|compilation|singolo) {media_name} [(di|dell'|della|dei|degli) [(artista|band|gruppo) ]{artist}] [(in|su|usando) [(il|la) ]{area_or_player_name}][ (con|usando) {radio_mode}]"
+        track_trigger:
+          name: Track trigger
+          description: Le frasi di attivazione per richiedere una traccia specifica.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+            - "(riproduci|ascolta) [la ](traccia|canzone) {media_name} [(di|dell'|della|dei|degli) [(artista|band|gruppo) ]{artist}] [(in|su|usando) [(il|la) ]{area_or_player_name}][ (con|usando) {radio_mode}]"
+        artist_trigger:
+          name: Artist trigger
+          description: Le frasi di attivazione per richiedere uno specifico artista.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+            - "(riproduci|ascolta) [(l'|la|il|i) ](artista|band|gruppo) {media_name} [(in|su|usando) [(il|la) ]{area_or_player_name}][ (con|usando) {radio_mode}]"
+        radio_trigger:
+          name: Radio trigger
+          description: The trigger sentences to request a specific radio station.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+            - "(riproduci|ascolta) [la ](radio|stazione) {media_name} [(in|su|usando) [(il|la) ]{area_or_player_name}]"
+        playlist_trigger:
+          name: Playlist trigger
+          description: Le frasi di attivazione per richiedere uno specifica playlist.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+            - "(riproduci|ascolta) [la ]playlist {media_name} [(in|su|usando) [(il|la) ]{area_or_player_name}]"
+        response_input:
+          name: Response for Assist
+          description: La risposta che darà Assist.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ trigger.slots.media_name }} in riproduzione su {{ mass_player_name
+            }}'
+triggers:
+- trigger: conversation
+  command: !input album_trigger
+  id: album
+- trigger: conversation
+  command: !input track_trigger
+  id: track
+- trigger: conversation
+  command: !input artist_trigger
+  id: artist
+- trigger: conversation
+  command: !input radio_trigger
+  id: radio
+- trigger: conversation
+  command: !input playlist_trigger
+  id: playlist
+actions:
+- alias: Define variables to be used in the automation
+  variables:
+    version: 20250128
+    default_player_entity_id: !input default_player_entity_id_input
+    trigger_id: '{{ trigger.id }}'
+    area_or_player_name: '{{ trigger.slots.area_or_player_name | default }}'
+    assist_device_id: '{{ trigger.device_id }}'
+    action_data:
+      media_id: '{{ trigger.slots.media_name }}'
+      media_type: '{{ ''radio'' if ''radio'' in media_name | lower else trigger_id
+        }}'
+      artist: '{{ trigger.slots.artist | default }}'
+      radio_mode: '{{ ''radio'' in trigger.slots.radio_mode | default | lower }}'
+    player_entity_id_by_player_name: "{{ integration_entities('music_assistant') |
+      expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
+      \ | map(attribute='entity_id') | list }}\n"
+    player_entity_id_by_area_name: '{{ areas() | map(''area_name'') | select(''match'',
+      area_or_player_name ~ ''$'',  ignorecase=true) | map(''area_entities'') | sum(start=[])
+      | select(''in'',  integration_entities(''music_assistant'')) | list }}
+
+      '
+    player_entity_id_by_assist_area: '{{ area_entities(area_id(trigger.device_id))
+      | select(''in'', integration_entities(''music_assistant'')) | list }}
+
+      '
+    mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
+      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
+    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
+      | join('', '') }}'
+- alias: Send media to selected Music Assistant Player
+  action: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Send back the response
+  set_conversation_response: !input response_input
+mode: single
