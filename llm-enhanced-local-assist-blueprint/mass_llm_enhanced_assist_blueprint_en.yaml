@@ -233,6 +233,15 @@ blueprint:
               multiline: false
               multiple: false
           default: Now playing <media_info> in <area_info> and on <player_info>
+        limit_response:
+          name: Limit response length
+          description: Limit the number of tokens of the response JSON to match the 
+            conversation agent limit
+          default: 150
+          selector:
+            number:
+              min: 100
+              max: 1000
     prompt_settings:
       name: Prompt setting for the LLM
       icon: mdi:robot
@@ -498,6 +507,7 @@ actions:
       version: 20250210
       expose_areas: !input expose_areas
       expose_players: !input expose_players
+      token_limit: !input limit_response
       prompt:
         intro: !input llm_prompt_intro
         media_type: !input llm_prompt_media_type
@@ -507,6 +517,9 @@ actions:
         description: !input llm_prompt_media_description
         target: !input llm_prompt_target
         outro: !input llm_prompt_outro
+        limit_outro: 'IMPORTANT: If the response would exceed {{ token_limit }} tokens, 
+        remove the last tracks from the list so that the response length remains under
+        this limit!'
       area_names:
         "{{ integration_entities('music_assistant')  | map('area_name')
         | join(', ') }}"
