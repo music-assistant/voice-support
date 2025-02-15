@@ -303,7 +303,8 @@ blueprint:
 
             - "track" if the search is about a specific track or a list of tracks.
 
-            - "album" if the search is about an album or a list of albums.
+            - "album" if the search is about an album, audio play, or audio book, or
+              a list of albums, audio plays, or audio books.
 
             - "artist" if the search is about an artist.
 
