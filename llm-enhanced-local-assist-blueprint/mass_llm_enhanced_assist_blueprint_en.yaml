@@ -156,6 +156,33 @@ blueprint:
               custom_value: false
               sort: false
           default: Use player settings
+        enqueue_mode:
+          name: Enqueue Mode
+          description:
+            "Determines how media will be enqueued into Music Assistant when requested.
+            \n\n
+            When set to Play, the request media will be played immediately, then the prior media in the queue will resume.
+            \n\n
+            When set to Play now and clear queue, the requested media will play immediately, and all existing media in the queue will be removed.
+            \n\n
+            When set to Play next, the requested media will play after the presently playing media. Once finished, the existing media in the queue will resume.
+            \n\n
+            When set to Play next and clear queue, the currently playing media will finish and then the requested media will be queued and start playing.
+            All the prior media in the queue will be removed.
+            \n\n
+            When set to Add to queue, this song will be added to the existing queue, without interrupting playback."
+          selector:
+            select:
+              options:
+                - Play
+                - Play now and clear queue
+                - Play next
+                - Play next and clear queue
+                - Add to queue
+              multiple: false
+              custom_value: false
+              sort: false
+          default: Play
     response_settings:
       name: Trigger and response settings for Assist
       icon: mdi:chat
@@ -494,7 +521,7 @@ triggers:
 actions:
   - alias: Store input from blueprint in variables so they can be used in the prompt
     variables:
-      version: 20250210
+      version: 20250224
       expose_areas: !input expose_areas
       expose_players: !input expose_players
       prompt:
@@ -530,6 +557,15 @@ actions:
         radio_mode:
           "{{ false if play_continuously == 'Never' else play_continuously
           == 'Always' and llm_result.action_data.media_type != 'radio' or 'NA' }}"
+        enqueue: >-
+          {%- set enqueue_modes = ({
+          "Play":"play",
+          "Play now and clear queue":"replace",
+          "Play next":"next",
+          "Play next and clear queue":"replace_next",
+          "Add to queue":"add"
+          }) -%}
+          {{enqueue_modes[enqueue_mode]}}
       llm_target_data:
         entity_id:
           "{% set players = llm_result.get('target_data', {}).get('players', []) %}

@@ -86,6 +86,33 @@ blueprint:
           filter:
             integration: music_assistant
             domain: media_player
+    enqueue_mode:
+          name: Enqueue Mode
+          description:
+            "Determines how media will be enqueued into Music Assistant when requested.
+            \n\n
+            When set to Play, the request media will be played immediately, then the prior media in the queue will resume.
+            \n\n
+            When set to Play now and clear queue, the requested media will play immediately, and all existing media in the queue will be removed.
+            \n\n
+            When set to Play next, the requested media will play after the presently playing media. Once finished, the existing media in the queue will resume.
+            \n\n
+            When set to Play next and clear queue, the currently playing media will finish and then the requested media will be queued and start playing.
+            All the prior media in the queue will be removed.
+            \n\n
+            When set to Add to queue, this song will be added to the existing queue, without interrupting playback."
+          selector:
+            select:
+              options:
+                - Play
+                - Play now and clear queue
+                - Play next
+                - Play next and clear queue
+                - Add to queue
+              multiple: false
+              custom_value: false
+              sort: false
+          default: Play
     trigger_response_settings:
       name: Trigger and response settings for Assist
       icon: mdi:chat
@@ -174,7 +201,7 @@ triggers:
 actions:
   - alias: Define variables to be used in the automation
     variables:
-      version: 20250128
+      version: 20250224
       default_player_entity_id: !input default_player_entity_id_input
       trigger_id: "{{ trigger.id }}"
       area_or_player_name: "{{ trigger.slots.area_or_player_name | default }}"
@@ -184,6 +211,15 @@ actions:
         media_type: "{{ 'radio' if 'radio' in media_name | lower else trigger_id }}"
         artist: "{{ trigger.slots.artist | default }}"
         radio_mode: "{{ 'radio' in trigger.slots.radio_mode | default | lower }}"
+        enqueue: >-
+          {%- set enqueue_modes = ({
+          "Play":"play",
+          "Play now and clear queue":"replace",
+          "Play next":"next",
+          "Play next and clear queue":"replace_next",
+          "Add to queue":"add"
+          }) -%}
+          {{enqueue_modes[enqueue_mode]}}
       player_entity_id_by_player_name: >
         {{ integration_entities('music_assistant') | expand 
           | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)
