@@ -116,6 +116,38 @@ blueprint:
               custom_value: false
               sort: false
           default: Use player settings
+        enqueue_mode:
+          name: Enqueue Mode
+          description:
+            'Determines how media will be enqueued into Music Assistant when requested.
+            \n\n
+            When set to Play, the request media will be played immediately, then the prior media in the queue will resume.
+            \n\n
+            When set to Play now and clear queue, the requested media will play immediately, and all existing media in the queue will be removed.
+            \n\n
+            When set to Play next, the requested media will play after the presently playing media. Once finished, the existing media in the queue will resume.
+            \n\n
+            When set to Play next and clear queue, the currently playing media will finish and then the requested media will be queued and start playing.
+            All the prior media in the queue will be removed.
+            \n\n
+            When set to Add to queue, this song will be added to the existing queue, without interrupting playback.'
+          selector:
+            select:
+              options:
+                - label: Play
+                  value: play
+                - label: Play now and clear queue
+                  value: replace
+                - label: Play next
+                  value: next
+                - label: Play next and clear queue
+                  value: replace_next
+                - label: Add to queue
+                  value: add
+              multiple: false
+              custom_value: false
+              sort: false
+          default: play
     prompt_settings:
       name: Prompt settings for the LLM
       icon: mdi:robot
@@ -330,7 +362,7 @@ fields:
     description: !input media_player_prompt
 sequence:
   - variables:
-      version: 20250128
+      version: 20250224
       default_player: !input default_player
       player_data: "{% set ma = integration_entities('music_assistant') %}
 
@@ -367,6 +399,7 @@ sequence:
         response_variable: invalid_target
   - variables:
       play_continuously: !input play_continuously
+      enqueue_mode: !input enqueue_mode
       action_data:
         media_id:
           "{{ media_id.split(';') | map('trim') | list if ';' in media_id
@@ -377,6 +410,7 @@ sequence:
         radio_mode:
           "{{ false if play_continuously == 'Never' else play_continuously
           == 'Always' and media_type != 'radio' or 'NA' }}"
+        enqueue: "{{enqueue_mode}}"
   - alias: Play music using Music Assistant
     action: music_assistant.play_media
     data: "{{ dict(action_data.items() | rejectattr('1', 'eq', 'NA')) }}"

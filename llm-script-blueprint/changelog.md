@@ -2,6 +2,10 @@
 
 # Changelog: Option 3 - Full LLM Script
 
+## 20250224
+
+* Feature: Add Enqueue Mode setting
+
 ## 20250129
 
 * fix: correct assistant typo throughout
