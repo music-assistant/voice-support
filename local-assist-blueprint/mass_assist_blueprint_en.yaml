@@ -86,7 +86,7 @@ blueprint:
           filter:
             integration: music_assistant
             domain: media_player
-    enqueue_mode:
+    enqueue_mode_input:
       name: Enqueue Mode
       description:
         'Determines how media will be enqueued into Music Assistant when requested.
@@ -208,6 +208,7 @@ actions:
     variables:
       version: 20250224
       default_player_entity_id: !input default_player_entity_id_input
+      enqueue_mode: !input enqueue_mode_input
       trigger_id: "{{ trigger.id }}"
       area_or_player_name: "{{ trigger.slots.area_or_player_name | default }}"
       assist_device_id: "{{ trigger.device_id }}"

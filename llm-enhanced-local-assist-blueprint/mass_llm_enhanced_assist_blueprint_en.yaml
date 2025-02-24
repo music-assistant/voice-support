@@ -554,6 +554,7 @@ actions:
     variables:
       llm_result: "{{ result.response.speech.plain.speech | from_json }}"
       play_continuously: !input play_continuously
+      enqueue_mode: !input enqueue_mode
       llm_action_data:
         media_id: "{{ llm_result.action_data.media_id }}"
         media_type: "{{ llm_result.action_data.media_type }}"

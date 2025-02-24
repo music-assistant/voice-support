@@ -399,6 +399,7 @@ sequence:
         response_variable: invalid_target
   - variables:
       play_continuously: !input play_continuously
+      enqueue_mode: !input enqueue_mode
       action_data:
         media_id:
           "{{ media_id.split(';') | map('trim') | list if ';' in media_id
