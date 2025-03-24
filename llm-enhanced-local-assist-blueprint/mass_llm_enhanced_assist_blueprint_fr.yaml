@@ -126,13 +126,13 @@ blueprint:
           selector:
             select:
               options:
-                - Paramètrage par défaut
+                - Paramétrage par défaut
                 - Toujours
                 - Jamais
               multiple: false
               custom_value: false
               sort: false
-          default: Paramètrage par défaut
+          default: Paramétrage par défaut
     response_settings:
       name: Paramétrage pour déclencher Assist (requêtes et réponses)
       icon: mdi:chat
@@ -213,7 +213,7 @@ blueprint:
         expose_players:
           name: Exposer les lecteurs Music Assistant
           description:
-            "Désactivez pour ne pas exposer les noms des lecteurs Music Assistant au LLM.
+            "Désactivez cette option pour ne pas exposer les noms des lecteurs Music Assistant au LLM.
             Si cette option est désactivée, tout nom de zone utilisé dans la demande doit
             correspondre exactement au nom de la zone dans Home Assistant."
           selector:
@@ -222,7 +222,7 @@ blueprint:
         expose_areas:
           name: Exposer les pièces disposant d'un lecteur Music Assistant
           description:
-            "Désactivez pour ne pas exposer les noms des zones contenant un lecteur Music
+            "Désactivez cette option pour ne pas exposer les noms des zones contenant un lecteur Music
             Assistant au LLM. Si cette option est désactivée, tout nom de lecteur utilisé
             dans la demande doit correspondre exactement au nom du lecteur dans Home Assistant."
           selector:
@@ -378,7 +378,7 @@ blueprint:
             'La clé "target_data" est utilisé pour définir l''information où la requête doit
             être jouée.
 
-            {% if expose_areas %}Ce sont les pièces qui ont un lecture Music Assistant:
+            {% if expose_areas %}Ce sont les pièces qui ont un lecteur Music Assistant:
             {{ area_names }}. Utilise seulement ces noms de pièces pour la clé "target_data".
             Si une autre description de pièce est utilisée, essaye de la lier à une des
             pièces où il y a un lecteur Music Assistant. {% endif %}
