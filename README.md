@@ -224,3 +224,23 @@ All responses and results are generated each time the script is used, so don't e
     * The Rolling Stones - Paint It Black
     * The Who - My Generation
     * AC/DC - Back in Black
+
+# Extra Voice Support Tools
+
+These are tools that can add extra voice commands outside of music requests, such as more advanced media playback controls.
+
+## Shuffle Music LLM Script
+This blueprint will create a script that can be exposed to an LLM so it will understand requests to enable/disable the shuffle setting on a Music Assistant media player.
+
+The blueprint is located in the `llm-shuffle-script-blueprint` folder of this repository and can be imported by using the following button:
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Fllm-shuffle-script-blueprint%2Fllm_shuffle_script.yaml)
+
+You can request to shuffle independently, or as part of a music request. The script supports requesting suffle on a media player by name, area, or by area context awareness.
+
+### Examples
+```
+Shuffle music.
+Shuffle music in the lounge.
+Play music by Muse and shuffle the music.
+```
