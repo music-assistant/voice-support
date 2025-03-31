@@ -1,0 +1,151 @@
+blueprint:
+  name: LLM Music Assistant Shuffle Script
+  author: nikito
+  domain: script
+  source_url: https://github.com/music-assistant/voice-support/blob/main/llm-shuffle-script-blueprint/llm_shuffle_script.yaml
+  description: '![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+    # Creates a script that allows a LLM to understand requests to enable/disable shuffle on Music Assistant media players
+    
+    * No changes are required for any of the settings below for this script to work,
+    but your specific LLM integration may need some fine-tuning. To do that, adjust
+    the prompts sent to the LLM.
+    
+    * **Make sure to expose the script to Assist after creating it.**
+
+    * **Make sure to give the script a clear description.** An example can be found
+    below.
+    
+    ## Example for script description
+
+    `Used to enable or disable the shuffle setting on a Music Assistant media player based on the user request.`
+    '
+  input:
+    music_assistant_settings:
+      name: General Music Assistant settings
+      icon: mdi:music
+      description: You can use these settings to configure general behavior of the script.
+      input:
+        default_player:
+          name: Default Player
+          description: 'The default Music Assistant player which will be used if it
+            is not clear from the request in which area or on which player shuffle should be controlled on.
+
+            Leave empty if you do not want a default player.'
+          selector:
+            entity:
+              filter:
+              - integration: music_assistant
+                domain:
+                - media_player
+              multiple: false
+          default:
+    prompt_settings:
+      name: Prompt settings for the LLM
+      icon: mdi:robot
+      description: You can use these settings to fine-tune the prompts for your specific
+        LLM (model).  In most cases the defaults should be fine.
+      collapsed: true
+      input:
+        area_prompt:
+          name: Area Prompt
+          description: The prompt that the LLM will use to provide the area.
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'The area where we want to enable or disable shuffle. If the request
+            does not mention a target (either an area or a player), use the area the
+            request comes from.
+
+            If the area can not be determined from the request, or the device the
+            request comes from, do not use this parameter.'
+        media_player_prompt:
+          name: Media Player Prompt
+          description: The prompt that the LLM will use to provide the media player.
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'Only use "media_player" if the request specifically mentions a
+            media player to enable/disable shuffle on.'
+        shuffle_prompt:
+          name: Shuffle Prompt
+          description: The prompt that the LLM will use to understand whether the user wants to enable or disable shuffle.
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'Determines if we want to turn on or off shuffle.
+            true if we want to turn on/enable shuffle, and false if we want to turn off/disable shuffle. This argument must always be provided!'
+mode: parallel
+max_exceeded: silent
+description: This script is used to enable or disable the shuffle setting on a media player based on a voice request. Use the parameters
+  as described in the description of each parameter.
+fields:
+  area:
+    selector:
+      area:
+        entity:
+          integration: music_assistant
+          domain: media_player
+        multiple: true
+    name: Area
+    description: !input area_prompt
+  media_player:
+    selector:
+      entity:
+        filter:
+          integration: music_assistant
+          domain: media_player
+        multiple: true
+    name: Media Player
+    description: !input media_player_prompt
+  shuffle:
+    selector:
+      boolean:
+    name: Shuffle
+    description: !input shuffle_prompt
+    required: true
+sequence:
+- variables:
+    version: 20250331
+    player_data: '{% set ma = integration_entities(''music_assistant'') %}
+
+      {% set ma_names = ma | map(''state_attr'', ''friendly_name'') | list %}
+
+      {% set ns = namespace(players=[]) %} {% for player in media_player | default([],
+      true) %}
+
+      {% if player in ma %}
+
+      {% set ns.players = ns.players + [player] %}
+
+      {% elif player in ma_names %}
+
+      {% set entity = ma | select(''is_state_attr'', ''friendly_name'', player) |
+      list %}
+
+      {% set ns.players = ns.players + entity %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.players }}'
+    target_data:
+      area_id: '{{ area | default(''NA'', true) }}'
+      entity_id: '{{ ''NA'' if area | default and not player_data else (player_data
+        or default_player) | default(''NA'', true) }}'
+    invalid_target:
+      response: Unable to find valid target
+- if:
+  - condition: template
+    value_template: '{{ not (area | default or player_data or default_player) }}'
+  then:
+  - stop: No valid target for shuffle found
+    response_variable: invalid_target
+- alias: Enable/Disable shuffle on a Music Assistant Media Player
+  action: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target: '{{ dict(target_data.items() | rejectattr(''1'', ''eq'', ''NA'')) }}'
