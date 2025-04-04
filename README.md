@@ -50,7 +50,8 @@ the sentence to your own language.
 
 All sentences must:
 
-* start with the words `Play` or `Listen to` followed by the item type `artist`/`track`/`album`/`playlist`/`radio` and then the name of the item
+* start with the words `Shuffle`, `Play` or `Listen to` followed by the item type `artist`/`track`/`album`/`playlist`/`radio` and then the name of the item
+* if starting with `Shuffle`, the player that handles the request will have it's shuffle setting turned on, otherwise it will be turned off
 * for album and track be optionally followed by `by [the] artist` and then the artist name
 * then be optionally followed by an area name or device name
 * then, for artist, track, album or playlist, be optionally followed by the phrase `using radio mode`
@@ -81,6 +82,8 @@ Listen to the radio station BBC Radio 1 in the bedroom
 Play the album Classical Nights on the Bedroom Sonos Speaker
 Listen to the record Classical Nights on the Bedroom Sonos Speaker
 Play the band U2
+Shuffle songs by Muse.
+Shuffle the album Classical Nights on the Bedroom Sonos Speaker
 ```
 
 ## Option 2 Local Assist enhanced by an LLM integration like [Open AI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) (ChatGPT) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) (Gemini).
@@ -142,8 +145,9 @@ You don't need to translate this if you use a different language.
 
 All sentences must:
 
-* start with the words `Play` or `Listen to` followed by a query about what you
+* start with the words `Shuffle`, `Play` or `Listen to` followed by a query about what you
 want to play
+* if starting with `Shuffle`, the player that handles the request will have it's shuffle setting turned on, otherwise it will be turned off
 * then be optionally followed by one or more area names and/or one or more device
 names to play the music on.
 
@@ -176,6 +180,8 @@ Listen to the record Classical Nights on the Bedroom Sonos Speaker
 Play songs by U2
 Play music by the composer from oppenheimer
 Play the album that has the nude baby swimming in the water on the cover
+Shuffle songs by Muse.
+Shuffle the album Classical Nights on the Bedroom Sonos Speaker
 ```
 
 ## Option 3: Script which can be used as a tool by an LLM integration like [Open AI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) (ChatGPT) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) (Gemini).
@@ -224,3 +230,9 @@ All responses and results are generated each time the script is used, so don't e
     * The Rolling Stones - Paint It Black
     * The Who - My Generation
     * AC/DC - Back in Black
+
+- Command: *Shuffle some music by Billy Talent*
+
+  Response: *I am now shuffling music by Billy Talent in the workshop. Enjoy the tunes!*
+  
+  Result: songs by Billy Talent will be played in the area the command was issued from, and the player in that area will have its shuffle setting turned on
