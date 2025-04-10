@@ -42,7 +42,9 @@ blueprint:
 
     Toutes les phrases doivent :
 
-    * commencer par `Joue` ou `Écoute` suivis d'une requête sur ce que vous voulez jouer.
+    * commencer par `Lecture aléatoire`, `Joue` ou `Écoute` suivis d'une requête sur ce que vous voulez jouer. En
+    utilisant la fonction de lecture aléatoire, le lecteur devra également avoir la fonction `lecture aléatoire` activée,
+    le cas échéant la lecture aléatoire sera désactivée.
 
     * optionnellement, inclure une ou plusieurs zones et/ou lecteurs Music Assistant pour la diffusion.
 
@@ -84,6 +86,10 @@ blueprint:
     Joue de la musique du compositeur d'Oppenheimer
 
     Joue l'album avec le bébé nu nageant sur la couverture
+
+    Lecture aléatoire des chansons de Muse.
+
+    Lecture aléatoire de l'album Classical Nights sur le Sonos de la chambre
     ```"
   homeassistant:
     min_version: 2024.10.0
@@ -156,7 +162,7 @@ blueprint:
               multiline: false
               multiple: true
           default:
-            - (joue|écoute) {query}
+            - (lecture aléatoire|écoute|joue) {query}
         combine_text:
           name: Combiner les mots
           description:
@@ -185,7 +191,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture de <media_info> dans <area_info>
+          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info>
         player_response:
           name: Réponse pour le lancement d'une lecture
           description: "Assist renverra cette réponse si seuls des lecteurs Music Assistant sont ciblés."
@@ -193,7 +199,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture de <media_info> sur <player_info>
+          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> sur <player_info>
         area_and_player_response:
           name: Réponse pour une lecture dans une pièce donnée, avec un lecteur ciblé
           description: "Assist renverra cette réponse si des zones et des lecteurs sont ciblés."
@@ -201,7 +207,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture de <media_info> dans <area_info> et sur <player_info>
+          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info> et sur <player_info>
     prompt_settings:
       name: Paramétrage du prompt pour le LLM
       icon: mdi:robot
@@ -448,6 +454,7 @@ actions:
   - alias: Enregistrement des données du blueprint dans des variables afin de les utiliser dans les prompts
     variables:
       version: 20250210
+      shuffle: '{{ ''shuffle'' in trigger.sentence | lower }}'
       expose_areas: !input expose_areas
       expose_players: !input expose_players
       prompt:
@@ -518,6 +525,11 @@ actions:
         action: music_assistant.play_media
         data: "{{ dict(llm_action_data.items() | rejectattr('1', 'eq', 'NA')) }}"
         target: "{{ target }}"
+  - alias: Active/Désactive la lecture aléatoire d'un lecteur
+    action: media_player.shuffle_set
+    data:
+      shuffle: '{{ shuffle }}'
+    target: '{{ target }}'
   - alias: Défini les variables pour les réponses
     variables:
       combine: !input combine_text
