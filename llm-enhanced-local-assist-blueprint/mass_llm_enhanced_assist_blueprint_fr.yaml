@@ -87,6 +87,8 @@ blueprint:
 
     Joue l'album avec le bébé nu nageant sur la couverture
 
+    Lecture de Coldplay
+
     Lecture aléatoire des chansons de Muse.
 
     Lecture aléatoire de l'album Classical Nights sur le Sonos de la chambre
@@ -162,7 +164,7 @@ blueprint:
               multiline: false
               multiple: true
           default:
-            - (lecture aléatoire|écoute|joue) {query}
+            - (lecture aléatoire de|lecture de|écoute|joue) {query}
         combine_text:
           name: Combiner les mots
           description:
@@ -191,7 +193,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info>
+          default: Lecture {{ 'aléatoire' if 'aléatoire' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info>
         player_response:
           name: Réponse pour le lancement d'une lecture
           description: "Assist renverra cette réponse si seuls des lecteurs Music Assistant sont ciblés."
@@ -199,7 +201,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> sur <player_info>
+          default: Lecture {{ 'aléatoire' if 'aléatoire' in trigger.sentence | lower else 'en cours'}} de <media_info> sur <player_info>
         area_and_player_response:
           name: Réponse pour une lecture dans une pièce donnée, avec un lecteur ciblé
           description: "Assist renverra cette réponse si des zones et des lecteurs sont ciblés."
@@ -207,7 +209,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Lecture {{ 'aléatoire' if 'shuffle' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info> et sur <player_info>
+          default: Lecture {{ 'aléatoire' if 'aléatoire' in trigger.sentence | lower else 'en cours'}} de <media_info> dans <area_info> et sur <player_info>
     prompt_settings:
       name: Paramétrage du prompt pour le LLM
       icon: mdi:robot
@@ -252,7 +254,7 @@ blueprint:
 
             Voici la commande voix à traiter et fournir par l''utilisateur : "{{ trigger.sentence
             }}"
-            Les préfixes de cette commande voix ne sont pas à utiliser dans la requête ou la réponse JSON (par exemple : Joue, Joue sur, Ecoute...)
+            Les préfixes de cette commande voix ne sont pas à utiliser dans la requête ou la réponse JSON (par exemple : Lecture aléatoire, Lecture, Lecture en cours, Joue, Joue sur, Ecoute...)
 
             Voici le JSON structuré attendu en réponse à cette requête : {"action_data":
             {"media_id":"name", "media_type":"type", "artist":"name", "album":"name"},
@@ -372,7 +374,9 @@ blueprint:
             'La clé "media_description" décrit le contenu média à jouer. Elle est extraite
             de la requête vocale en ne conservant que la partie pertinente.
             Si la requête est "Joue les meilleures chansons de Queen sur l''enceinte du salon"
-            alors la valeur de "media_description" = "les meilleures chansons de Queen"'
+            alors la valeur de "media_description" = "les meilleures chansons de Queen"
+            Si la requête est "Lecture aléatoire de Queen" alors la valeurs est "Queen"
+            Il est important de ne pas indiquer dans cette clé les préfixe de déclenchement de la lecture de la musique tels que Joue sur, Lecture aléatoire de'
         llm_prompt_target:
           name: Description du prompt LLM pour la partie target
           description: 'Explications du fonctionnement de "target_data" pour la sortie'
@@ -454,7 +458,7 @@ actions:
   - alias: Enregistrement des données du blueprint dans des variables afin de les utiliser dans les prompts
     variables:
       version: 20250210
-      shuffle: '{{ ''shuffle'' in trigger.sentence | lower }}'
+      shuffle: '{{ ''aléatoire'' in trigger.sentence | lower }}'
       expose_areas: !input expose_areas
       expose_players: !input expose_players
       prompt:
