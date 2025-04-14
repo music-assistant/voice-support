@@ -31,7 +31,7 @@ blueprint:
     setting is to send them. In case you change the settings in the blueprint and
     do not expose the area names and player names to the LLM, the name must exactly
     match the name of the area or player in Home Assistant. So when the area name
-    is _Bedroom Sophia_ it does not work if you you say _Sophia''s Bedroom_ or when
+    is _Bedroom Sophia_ it does not work if you say _Sophia''s Bedroom_ or when
     the Speech to Text conversion uses _Sofia_ instead of _Sophia_. Unfortunately
     aliases can''t be used in the automation, as there is no template to get the aliases
     of areas or entities. Capitalization of words does''t matter, so _bedroom sophia_
@@ -274,7 +274,7 @@ blueprint:
 
             Here is the structured JSON that I expect in response {"action_data":
             {"media_id":"name", "media_type":"type", "artist":"name", "album":"name"},
-            "media_description": "description of media", "target_data", {"areas":
+            "media_description": "description of media", "target_data": {"areas":
             ["area name"], "players": ["player name"]}}'
         llm_prompt_media_type:
           name: Media type LLM prompt
@@ -346,7 +346,7 @@ blueprint:
             to further restrict the search.
 
             For example, if the input is "Hells Bells by ACDC", then the output should
-            be {"media_id":"Hells Bells", "media_type":"track", "artist":"AC/DC"}
+            be {"action_data":{"media_id":"Hells Bells", "media_type":"track", "artist":"AC/DC"}}
 
             "artist" and "album" are optional and never used in the case of a playlist
             search.'
@@ -360,26 +360,26 @@ blueprint:
           default: 'There can be several types of answers for the "action_data" dictionary.
             Here are some examples:
 
-            Just an artist >> {"media_id": "artist name", "media_type":"artist"}.
+            Just an artist >> {"action_data":{"media_id": "artist name", "media_type":"artist"}}.
 
-            An album by an artist >> {"media_id": "album name", "media_type": "album",
-            "artist": "artist name"}.
+            An album by an artist >> {"action_data":{"media_id": "album name", "media_type": "album",
+            "artist": "artist name"}}.
 
-            A track by an artist >> {"media_id": "track name", "media_type": "track",
-            "artist": "artist name"}.
+            A track by an artist >> {"action_data":{"media_id": "track name", "media_type": "track",
+            "artist": "artist name"}}.
 
-            Just a track if the artist is not known >> {"media_id": "track name",
-            "media_type": "track"}.
+            Just a track if the artist is not known >> {"action_data":{"media_id": "track name",
+            "media_type": "track"}}.
 
-            Just a playlist if the request is a specific playlist >> {"media_id":"playlist
-            name", "media_type":"playlist"}.
+            Just a playlist if the request is a specific playlist >> {"action_data":{"media_id":"playlist
+            name", "media_type":"playlist"}}.
 
-            Multiple tracks of different artists >> {"media_id": ["Artist name - Song
+            Multiple tracks of different artists >> {"action_data":{"media_id": ["Artist name - Song
             name", "Another artist name - Another song name", "Another artist name
-            - Another song name"], "media_type":"track"}.
+            - Another song name"], "media_type":"track"}}.
 
-            Multiple tracks of the same artist >> {"media_id": ["Song name", "Another
-            song name"], "artist": "artist name", "media_type":"track"}'
+            Multiple tracks of the same artist >> {"action_data":{"media_id": ["Song name", "Another
+            song name"], "artist": "artist name", "media_type":"track"}}'
         llm_prompt_media_description:
           name: Media description LLM prompt
           description: Explanation on the "media_description" part of the output
