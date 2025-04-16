@@ -13,3 +13,7 @@
 ## 20250404
 
 * Added logic to handle requesting to shuffle music
+
+## 20250416
+
+* Adding additional prompt details for shuffle on the main tool prompt
