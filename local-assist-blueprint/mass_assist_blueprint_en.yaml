@@ -26,7 +26,7 @@ blueprint:
     All sentences must:
 
     * start with the words `Shuffle`, `Play` or `Listen to` followed by the item type `artist`/`track`/`album`/`playlist`/`radio`
-    and then the name of the item. If the stence starts with `Shuffle`, the player that plays the request will also have the shuffle
+    and then the name of the item. If the sentence starts with `Shuffle`, the player that plays the request will also have the shuffle
     option turned on, otherwise it will be turned off.
 
     * for album and track be optionally followed by `by [the] artist` and then the
