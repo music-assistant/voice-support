@@ -104,7 +104,7 @@ blueprint:
         treated as ''or''. { query } is a wildcard value which will contain the requested
         media and optionally the area or Music Assistant player.
 
-        You can als set the responses Assist will give. It uses jinja templates which
+        You can also set the responses Assist will give. It uses jinja templates which
         will be replaced with the media information and player name of the Music Assistant
         player.'
       collapsed: true
