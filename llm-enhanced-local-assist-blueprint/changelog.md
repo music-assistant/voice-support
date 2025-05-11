@@ -13,3 +13,6 @@
 ## 20250404
 
 * Added logic to handle requesting to shuffle music
+
+## 20250511
+* Added fixes to ensure llm result is wrapped in action_data appropriately
