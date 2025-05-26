@@ -17,3 +17,6 @@
 ## 20250416
 
 * Adding additional prompt details for shuffle on the main tool prompt
+
+## 20250526
+* Add default for `shuffle`  setting in case not set properly by LLM
