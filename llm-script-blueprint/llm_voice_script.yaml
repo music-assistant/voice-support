@@ -354,9 +354,9 @@ fields:
     description: !input shuffle_prompt
 sequence:
 - variables:
-    version: 20250404
+    version: 20250526
     default_player: !input default_player
-    shuffle: '{{ shuffle }}'
+    shuffle: '{{ shuffle | default(false, true) }}'
     player_data: '{% set ma = integration_entities(''music_assistant'') %}
 
       {% set ma_names = ma | map(''state_attr'', ''friendly_name'') | list %}
