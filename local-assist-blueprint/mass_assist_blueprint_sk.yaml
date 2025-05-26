@@ -1,0 +1,225 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - plán, ktorý pridáva (výhradne) lokálnu podporu hlasu
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_sk.yaml
+  description: ' ![Obrázok](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # Púšťajte hudbu pomocou hlasových povelov
+
+    ### Nastavenie
+
+  Musíte vykonať tieto zmeny:
+
+    * nastavte `Predvolený prehrávač`, ktorý sa použije vtedy, ak ho neuvediete v požiadavke a tá zároveň nepríde z oblasti, v ktorej sa nachádza prehrávač Music Assistant.
+
+    #### Voliteľné
+
+    * zmeňte spúšťaciu vetu alebo pridajte ďalšie, môžete tiež použiť toto na preklad vety do vášho jazyka.
+
+    * zmeňte odpovede alebo ich preložte do vášho jazyka.
+
+
+    ### Použitie
+
+    Všetky vety musia:
+
+    * začínať slovom `Prehraj`, `Prehrávaj`, `Pusti` alebo `Počúvať`, za ktorým bude nasledovať typ média `umelec`/`stopa`/`album`/`playlist`/`rádio` (vyskloňovaný v akuzatíve jednotného čísla)
+    a jeho názov. Ak pred alebo po tomto slove uvediete `náhodne`, položky budú prehrávané v náhodnom poradí.
+
+    * pri albumoch a skladbách môžete voliteľne uviesť `od umelca/speváka/skupiny`, za ktorým bude nasledovať meno interpreta
+
+    * následne môžete pridať názov oblasti alebo meno prehrávača, ktorý má požiadavku spracovať
+
+    * po všetkých položkách okrem rádiovej stanice môžete pridať `ako rádio`
+
+    #### Podporované varianty
+
+    Toto sú rozpoznávané alternatívy slov:
+
+    |Typ média|Podporované varianty|
+
+    |---|---|
+
+    |`umelec`|`umelkyňa`, `skupina`, `hudobná skupina`, `interpret`, `spevák`, `speváčka`|
+
+    |`album`|`nahrávka`, `singel`|
+
+    |`stopa`|`skladba`, `pieseň`, `pesnička`|
+
+    |`rádio`|`stanica`, `rozhlasová stanica`, `rádiostanica`|
+
+    |`playlist`|`zoznam skladieb`|`zoznam pesničiek`|`zoznam piesní`|
+
+    Slová musia byť vyskloňované podľa pravidiel slovenského jazyka.
+
+    #### Príklady
+
+    ```
+
+    Počúvať skupinu Pink Floyd v kuchyni
+
+    Prehrávať album Jagged Little Pill v študovni
+
+    Počúvať album Greatest Hits od speváka James Taylor v kuchyni
+
+    Pustiť skladbu New Years Day v spálni
+
+    Prehrať skladbu New Years Day v skupine ako rádio
+
+    Spustiť pieseň A Hard Days Night od speváka Billy Joel v spálni
+
+    Počúvať playlist Classic Rock v študovni
+
+    Prehrávať rádiostanicu BBC Radio 1 v spálni
+
+    Prehrať album Classical Nights na Sonos reproduktore
+
+    Počúvať nahrávku Classical Nights na Sonos reproduktore
+
+    Prehrať skupinu U2
+
+    Náhodne prehrávať skladby od Muse.
+
+    Prehrávať náhodne album Classical Nights na Sonos reproduktore
+
+    ```'
+  input:
+    default_player_entity_id_input:
+      name: Predvolený prehrávač
+      selector:
+        entity:
+          filter:
+          - integration: music_assistant
+            domain:
+            - media_player
+          multiple: false
+    trigger_response_settings:
+      name: Spúšťač a nastavenie odpovede Asistenta
+      icon: mdi:chat
+      description: 'V týchto nastaveniach môžete upraviť existujúce spúsťače alebo pridať ďalšie. Vložením textu medzi hranaté zátvorky [ ] ho označíte ako nepovinný. Pomocou okrúhlych zátvoriek ( ) a vodorovnej čiary | môžete pridať viacero variánt toho istého slova. { výraz } je zástupným výrazom, ktorý bude naplnený požadovaným typom média a voliteľne oblasťou alebo menom prehrávača Home Assistant.
+
+        Môžete tiež nastaviť odpovede na povely. Odpovede používajú šablóny jinja, v ktorých budú použité informácie o médiu a názov prehrávača Music Assistant.'
+      collapsed: true
+      input:
+        album_trigger:
+          name: Spúšťač albumu
+          description: Vety, ktoré aktivujú prehrávanie konkrétneho albumu.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[náhodne] (prehr(ávaj|aj)|počúvať|pusti[ť]) [náhodne] (album|nahrávku|singel) {media_name}
+            [od ([hudobnej] skupiny|umel(ca|kyne)|speváka|speváčky|interpreta) {artist}] [(na|pomocou|v) {area_or_player_name}]
+            [ako {radio_mode}]'
+        track_trigger:
+          name: Spúšťač stopy
+          description: Vety, ktoré aktivujú prehrávanie konkrétnej stopy.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[náhodne] (prehr(ávaj|aj)|počúvať|pusti[ť]) [náhodne] (stopu|skladbu|pieseň|pesničku) {media_name}
+            [od ([hudobnej] skupiny|umel(ca|kyne)|speváka|speváčky|interpreta) {artist}] [(na|pomocou|v) {area_or_player_name}][
+            ako {radio_mode}]'
+        artist_trigger:
+          name: Spúšťač umelca
+          description: Vety, ktoré aktivujú prehrávanie hudby od konkrétneho umelca.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[náhodne] (prehr(ávaj|aj)|počúvať|pusti[ť]) [náhodne] ([hudobnú] skupinu|umel(ca|kyňu)|speváka|speváčku|interpreta)
+            {media_name} [(na|pomocou|v) {area_or_player_name}] [ako {radio_mode}]'
+        radio_trigger:
+          name: Spúšťač rádia
+          description: Vety, ktoré aktivujú prehrávanie konkrétnej rozhlasovej stanice.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[náhodne] (prehr(ávaj|aj)|počúvať|pusti[ť]) [náhodne] (rádiostanicu|rádio|[rozhlasovú] stanicu)
+            {media_name} [(na|pomocou|v) {area_or_player_name}]'
+        playlist_trigger:
+          name: Spúšťač playlistu
+          description: Vety, ktoré aktivujú prehrávanie konkrétneho playlistu.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[náhodne] (prehr(ávaj|aj)|počúvať|pusti[ť]) [náhodne] (playlist|zoznam (skladieb|pesničiek|piesní))
+            {media_name} [(na|pomocou|v) {area_or_player_name}] [ako {radio_mode}]'
+        response_input:
+          name: Odpoveď pre Asistenta
+          description: Odpoveď, ktorú Asistent vráti.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ ''Náhodne'' if ''náhodne'' in trigger.sentence | lower  else ''''}} prehrávam {{ trigger.slots.media_name }} 
+            na {{ mass_player_name }}'
+triggers:
+- trigger: conversation
+  command: !input album_trigger
+  id: album
+- trigger: conversation
+  command: !input track_trigger
+  id: track
+- trigger: conversation
+  command: !input artist_trigger
+  id: artist
+- trigger: conversation
+  command: !input radio_trigger
+  id: radio
+- trigger: conversation
+  command: !input playlist_trigger
+  id: playlist
+actions:
+- alias: Definuj premenné, ktoré sa použijú v automatizácii
+  variables:
+    version: 20250412
+    shuffle: '{{ ''náhodne'' in trigger.sentence | lower }}'
+    default_player_entity_id: !input default_player_entity_id_input
+    trigger_id: '{{ trigger.id }}'
+    area_or_player_name: '{{ trigger.slots.area_or_player_name | default }}'
+    assist_device_id: '{{ trigger.device_id }}'
+    action_data:
+      media_id: '{{ trigger.slots.media_name }}'
+      media_type: '{{ ''radio'' if ''rádio'' in media_name | lower else trigger_id
+        }}'
+      artist: '{{ trigger.slots.artist | default }}'
+      radio_mode: '{{ ''rádio'' in trigger.slots.radio_mode | default | lower }}'
+    player_entity_id_by_player_name: "{{ integration_entities('music_assistant') |
+      expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
+      \ | map(attribute='entity_id') | list }}\n"
+    player_entity_id_by_area_name: '{{ areas() | map(''area_name'') | select(''match'',
+      area_or_player_name ~ ''$'',  ignorecase=true) | map(''area_entities'') | sum(start=[])
+      | select(''in'',  integration_entities(''music_assistant'')) | list }}
+
+      '
+    player_entity_id_by_assist_area: '{{ area_entities(area_id(trigger.device_id))
+      | select(''in'', integration_entities(''music_assistant'')) | list }}
+
+      '
+    mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
+      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
+    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
+      | join('', '') }}'
+- alias: Odošli médium vybranému prehrávaču Music Assistant
+  action: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Zapni/vypni náhodné prehrávanie na prehrávači Music Assistant
+  action: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Vygeneruj odpoveď
+  set_conversation_response: !input response_input
+mode: single
