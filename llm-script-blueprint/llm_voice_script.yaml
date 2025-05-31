@@ -304,19 +304,16 @@ fields:
         - radio
     name: Media Type
     description: !input media_type_prompt
-    required: true
   artist:
     selector:
       text:
     name: Artist
     description: !input artist_prompt
-    required: true
   album:
     selector:
       text:
     name: Album
     description: !input album_prompt
-    required: true
   media_id:
     selector:
       text:
@@ -328,7 +325,6 @@ fields:
       text:
     name: Media Description
     description: !input media_description_prompt
-    required: true
   area:
     selector:
       area:
