@@ -201,7 +201,7 @@ actions:
         }}'
       artist: '{{ trigger.slots.artist | default }}'
       radio_mode: '{{ ''radio'' in trigger.slots.radio_mode | default | lower }}'
-    ma_players: '{{  integration_entities(''music_assistant'') | select(''match'', 'media_player'') | list }}'
+    ma_players: '{{  integration_entities(''music_assistant'') | select(''match'', ''media_player'') | list }}'
     player_entity_id_by_player_name: "{{ ma_players |
       expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
       \ | map(attribute='entity_id') | list }}\n"
