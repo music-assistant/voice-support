@@ -192,7 +192,7 @@ blueprint:
               multiple: false
           default: '{{ "Sekoitetaan" if "sekoita" in trigger.sentence | lower else "Toistetaan"
             }} {{ trigger.slots.media_name }} soittimella {{ mass_player_name }}'
-triggers:
+trigger:
 - platform: conversation
   command: !input album_trigger
   id: album
@@ -208,7 +208,7 @@ triggers:
 - platform: conversation
   command: !input playlist_trigger
   id: playlist
-actions:
+action:
 - variables:
     assistant_player_map: !input assistant_player_map
     default_player_entity_id: !input default_player_entity_id_input
@@ -218,11 +218,15 @@ actions:
       expand | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)
       | map(attribute='entity_id') | list }}
     player_entity_id_by_area_name: >-
-      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') %}
-      {{ areas() | map('area_id') | select('is_in', area_id(area_or_player_name)) | map('area_entities') | sum(start=[])
-      | select('in', ma_players) | list }}
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') | list %}
+      {% set spoken_area_id = area_id(area_or_player_name) %}
+      {% if spoken_area_id %}
+        {{ area_entities(spoken_area_id) | select('in', ma_players) | list }}
+      {% else %}
+        []
+      {% endif %}
     player_entity_id_by_assist_area: >-
-      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') %}
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') | list %}
       {{ area_entities(area_id(trigger.device_id)) | select('in', ma_players) | list }}
     mass_player_entity_id: >-
       {% set player_map = assistant_player_map %}
@@ -261,3 +265,4 @@ actions:
   data:
     text: !input response_input
 mode: single
+```
