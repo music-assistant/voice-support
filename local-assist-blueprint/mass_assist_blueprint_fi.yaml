@@ -134,4 +134,106 @@ blueprint:
             {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
         artist_trigger:
           name: Artistin liipaisin
-          description: Liip
+          description: Liipaisinlauseet musiikin pyytämiseksi tietyltä artistilta.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          # Muoto: "soita artisti <artistin nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artisti|bändi|yhtye) {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}][ radiotilassa]
+          # Muoto: "soita musiikkia yhtyeeltä <yhtyeen nimi>"
+          - (sekoita|toista|kuuntele|soita) [musiikkia] (artistilta|bändiltä|yhtyeeltä)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+        radio_trigger:
+          name: Radion liipaisin
+          description: Liipaisinlauseet tietyn radioaseman pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (sekoita|toista|kuuntele|soita) [ ](radioasema|radio) {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}]
+        playlist_trigger:
+          name: Soittolistan liipaisin
+          description: Liipaisinlauseet tietyn soittolistan pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (sekoita|toista|kuuntele|soita) [ ]soittolista {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}][ radiotilassa]
+        response_input:
+          name: Vastaus Assistille
+          description: Vastaus, jonka Assist antaa.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "Sekoitetaan" if "sekoita" in trigger.sentence | lower else "Toistetaan"
+            }} {{ trigger.slots.media_name }} soittimella {{ mass_player_name }}'
+triggers:
+- trigger: conversation
+  command: !input album_trigger
+  id: album
+- trigger: conversation
+  command: !input track_trigger
+  id: track
+- trigger: conversation
+  command: !input artist_trigger
+  id: artist
+- trigger: conversation
+  command: !input radio_trigger
+  id: radio
+- trigger: conversation
+  command: !input playlist_trigger
+  id: playlist
+actions:
+- alias: Define variables to be used in the automation
+  variables:
+    version: 20250404
+    shuffle: '{{ ''sekoita'' in trigger.sentence | lower }}'
+    default_player_entity_id: !input default_player_entity_id_input
+    trigger_id: '{{ trigger.id }}'
+    area_or_player_name: '{{ trigger.slots.area_or_player_name | default }}'
+    assist_device_id: '{{ trigger.device_id }}'
+    action_data:
+      media_id: '{{ trigger.slots.media_name }}'
+      media_type: '{{ ''radio'' if ''radio'' in media_name | lower else trigger_id
+        }}'
+      artist: '{{ trigger.slots.artist | default }}'
+      radio_mode: '{{ ''radio'' in trigger.sentence | lower }}'
+    ma_players: '{{  integration_entities(''music_assistant'') | select(''match'', ''media_player'') | list }}'
+    player_entity_id_by_player_name: "{{ ma_players |
+      expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
+      \ | map(attribute='entity_id') | list }}\n"
+    player_entity_id_by_area_name: '{{ areas() | map(''area_name'') | select(''match'',
+      area_or_player_name ~ ''$'',  ignorecase=true) | map(''area_entities'') | sum(start=[])
+      | select(''in'',  ma_players) | list }}
+
+      '
+    player_entity_id_by_assist_area: '{{ area_entities(area_id(trigger.device_id))
+      | select(''in'', ma_players) | list }}
+
+      '
+    mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
+      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
+    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
+      | join('', '') }}'
+- alias: Send media to selected Music Assistant Player
+  action: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Enable/Disable shuffle on a Music Assistant Media Player
+  action: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Send back the response
+  set_conversation_response: !input response_input
+mode: single
