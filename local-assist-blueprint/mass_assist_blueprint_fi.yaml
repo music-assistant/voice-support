@@ -265,4 +265,3 @@ action:
   data:
     text: !input response_input
 mode: single
-```
