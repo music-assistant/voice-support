@@ -25,7 +25,7 @@ blueprint:
 
     Kaikkien lauseiden on:
 
-    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
+    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `bändi`, `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
     ja sen jälkeen kohteen nimi. Jos lause alkaa sanalla `Sekoita`, pyynnön toistavassa soittimessa on myös sekoitustoiminto
     päällä, muuten se on pois päältä.
 
