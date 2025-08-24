@@ -1,90 +1,30 @@
 blueprint:
   domain: automation
-  name: Music Assistant - Puheohjaus paikallisella LLM:llä
+  name: Music Assistant - Puheohjaus paikallisella LLM:llä (Soitinparituksella)
   source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_fi.yaml
   description: ' ![Kuva](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
 
     # Toista mediaa äänikomennoilla
 
+    Tämä blueprint mahdollistaa musiikin toistamisen Music Assistant -integraatiolla käyttäen luonnollisen kielen äänikomentoja.
+
     ### Blueprintin asetukset
 
     #### Vaaditut
 
-    * Aseta `Oletussoitin`, jota käytetään, kun pyynnössä ei mainita kohdetta
-    eikä pyyntö tule alueelta, jolla on Music Assistant -soitin.
+    * Aseta `Oletussoitin`, jota käytetään, kun pyynnössä ei mainita kohdetta eikä pyyntö tule alueelta, jolla on Music Assistant -soitin.
 
     #### Valinnaiset
 
-    * Muuta liipaisinlausetta tai lisää uusia. Voit myös käyttää tätä kääntääksesi
-    lauseen omalle kielellesi.
+    * **Ääniavustajien ja soittimien paritus**: Määritä, ohjaako tietty ääniavustin aina tiettyä soitinta.
 
-    * Muuta vastauksia tai käännä ne omalle kielellesi.
+    * Muuta liipaisinlausetta tai lisää uusia. Voit myös käyttää tätä kääntääksesi lauseen omalle kielellesi.
 
-
-    ### Käyttö
-
-    Kaikkien lauseiden on:
-
-    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
-    ja sen jälkeen kohteen nimi. Jos lause alkaa sanalla `Sekoita`, pyynnön toistavassa soittimessa on myös sekoitustoiminto
-    päällä, muuten se on pois päältä.
-
-    * albumin ja kappaleen kohdalla valinnaisesti seurattava `artistilta`/`bändiltä`/`yhtyeeltä` ja sitten
-    artistin nimi
-
-    * sen jälkeen valinnaisesti seurattava alueen tai laitteen nimi
-
-    * sen jälkeen, artistin, kappaleen, albumin tai soittolistan kohdalla, valinnaisesti seurattava lause
-    `radiotilassa`
-
-    #### Hyväksytyt muunnelmat
-
-    |Mediatyyppi|Hyväksytyt muunnelmat|
-    
-    |---|---|
-    
-    |`artisti`|`bändi`, `yhtye`|
-    
-    |`kappale`|`biisi`, `laulu`|
-    
-    |`radio`|`radioasema`|
-    
-    |`albumi`|`levy`|
-    
-    |`soittolista`||
-
-
-    #### Esimerkkejä
-
-    ```
-    Toista artisti Pink Floyd keittiössä
-    
-    Kuuntele albumi Jagged Little Pill työhuoneessa
-    
-    Soita levy Greatest Hits yhtyeeltä James Taylor keittiössä
-    
-    Toista kappale New Years Day makuuhuoneessa
-    
-    Toista kappale New Years Day makuuhuoneessa radiotilassa
-    
-    Toista biisi A Hard Days Night artistilta Billy Joel makuuhuoneessa
-    
-    Kuuntele soittolista Classic Rock työhuoneessa
-    
-    Kuuntele radioasema BBC Radio 1 makuuhuoneessa
-    
-    Toista levy Classical Nights makuuhuoneen Sonos-kaiuttimella
-    
-    Toista yhtye U2
-    
-    Sekoita Musen kappaleet
-    
-    Sekoita levy Classical Nights makuuhuoneen Sonos-kaiuttimella
-    
-    ```'
+    * Muuta vastauksia tai käännä ne omalle kielellesi.'
   input:
     default_player_entity_id_input:
       name: Oletussoitin
+      description: Soitin, jota käytetään, jos muuta soitinta ei tunnisteta komennosta tai kontekstista.
       selector:
         entity:
           filter:
@@ -92,6 +32,20 @@ blueprint:
             domain:
             - media_player
           multiple: false
+    assistant_player_map:
+      name: Ääniavustajien ja soittimien paritus
+      description: >
+        (Valinnainen) Määritä, mikä soitin liitetään mihinkin ääniavustajaan.
+        Jos komento tulee listatulta avustajalta, musiikki ohjataan aina määriteltyyn soittimeen.
+        Käytä YAML-muotoa, jossa avain on ääniavustajan entiteetti-ID ja arvo on soittimen entiteetti-ID.
+        Esimerkki:
+        
+        assist_satellite.keittion_aani: media_player.keittion_soitin
+        
+        assist_satellite.olohuoneen_aani: media_player.olohuoneen_kaiutinpari
+      selector:
+        object:
+      default: {}
     trigger_response_settings:
       name: Liipaisin- ja vastausasetukset Assistille
       icon: mdi:chat
@@ -195,46 +149,57 @@ triggers:
 actions:
 - alias: Define variables to be used in the automation
   variables:
-    version: 20250404
-    shuffle: '{{ ''sekoita'' in trigger.sentence | lower }}'
+    assistant_player_map: !input assistant_player_map
     default_player_entity_id: !input default_player_entity_id_input
-    trigger_id: '{{ trigger.id }}'
     area_or_player_name: '{{ trigger.slots.area_or_player_name | default }}'
-    assist_device_id: '{{ trigger.device_id }}'
+    player_entity_id_by_player_name: >-
+      {{ integration_entities('music_assistant') | select('match', 'media_player') |
+      expand | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)
+      | map(attribute='entity_id') | list }}
+    player_entity_id_by_area_name: >-
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') %}
+      {{ areas() | map('area_id') | select('is_in', area_id(area_or_player_name)) | map('area_entities') | sum(start=[])
+      | select('in', ma_players) | list }}
+    player_entity_id_by_assist_area: >-
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') %}
+      {{ area_entities(area_id(trigger.device_id)) | select('in', ma_players) | list }}
+    mass_player_entity_id: >-
+      {% set player_map = assistant_player_map %}
+      {% set entities = device_entities(trigger.device_id) or [] %}
+      {% set mapped_player = namespace(id=none) %}
+      {% for entity in entities %}
+        {% if entity in player_map and mapped_player.id == none %}
+          {% set mapped_player.id = player_map[entity] %}
+        {% endif %}
+      {% endfor %}
+      {% if mapped_player.id != none %}
+        {{ [mapped_player.id] }}
+      {% else %}
+        {{ player_entity_id_by_player_name
+           or player_entity_id_by_area_name
+           or player_entity_id_by_assist_area
+           or [default_player_entity_id] }}
+      {% endif %}
+    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'') | join('', '''') }}'
     action_data:
       media_id: '{{ trigger.slots.media_name }}'
-      media_type: '{{ ''radio'' if ''radio'' in media_name | lower else trigger_id
-        }}'
+      media_type: '{{ ''radio'' if ''radio'' in trigger.slots.media_name | lower else trigger.id }}'
       artist: '{{ trigger.slots.artist | default }}'
       radio_mode: '{{ ''radio'' in trigger.sentence | lower }}'
-    ma_players: '{{  integration_entities(''music_assistant'') | select(''match'', ''media_player'') | list }}'
-    player_entity_id_by_player_name: "{{ ma_players |
-      expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
-      \ | map(attribute='entity_id') | list }}\n"
-    player_entity_id_by_area_name: '{{ areas() | map(''area_name'') | select(''match'',
-      area_or_player_name ~ ''$'',  ignorecase=true) | map(''area_entities'') | sum(start=[])
-      | select(''in'',  ma_players) | list }}
-
-      '
-    player_entity_id_by_assist_area: '{{ area_entities(area_id(trigger.device_id))
-      | select(''in'', ma_players) | list }}
-
-      '
-    mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
-      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
-    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
-      | join('', '') }}'
+    shuffle: '{{ ''sekoita'' in trigger.sentence | lower }}'
 - alias: Send media to selected Music Assistant Player
-  action: music_assistant.play_media
+  service: mass.play_media
   data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
   target:
     entity_id: '{{ mass_player_entity_id }}'
 - alias: Enable/Disable shuffle on a Music Assistant Media Player
-  action: media_player.shuffle_set
+  service: media_player.shuffle_set
   data:
     shuffle: '{{ shuffle }}'
   target:
     entity_id: '{{ mass_player_entity_id }}'
 - alias: Send back the response
-  set_conversation_response: !input response_input
+  service: conversation.process
+  data:
+    text: !input response_input
 mode: single
