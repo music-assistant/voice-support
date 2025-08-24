@@ -6,21 +6,83 @@ blueprint:
 
     # Toista mediaa äänikomennoilla
 
-    Tämä blueprint mahdollistaa musiikin toistamisen Music Assistant -integraatiolla käyttäen luonnollisen kielen äänikomentoja.
-
     ### Blueprintin asetukset
 
     #### Vaaditut
 
-    * Aseta `Oletussoitin`, jota käytetään, kun pyynnössä ei mainita kohdetta eikä pyyntö tule alueelta, jolla on Music Assistant -soitin.
+    * Aseta `Oletussoitin`, jota käytetään, kun pyynnössä ei mainita kohdetta
+    eikä pyyntö tule alueelta, jolla on Music Assistant -soitin.
 
     #### Valinnaiset
 
+    * Muuta liipaisinlausetta tai lisää uusia. Voit myös käyttää tätä kääntääksesilauseen omalle kielellesi.
+    
     * **Ääniavustajien ja soittimien paritus**: Määritä, ohjaako tietty ääniavustin aina tiettyä soitinta.
 
-    * Muuta liipaisinlausetta tai lisää uusia. Voit myös käyttää tätä kääntääksesi lauseen omalle kielellesi.
 
-    * Muuta vastauksia tai käännä ne omalle kielellesi.'
+    * Muuta vastauksia tai käännä ne omalle kielellesi.
+    
+    ### Käyttö
+
+    Kaikkien lauseiden on:
+
+    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
+    ja sen jälkeen kohteen nimi. Jos lause alkaa sanalla `Sekoita`, pyynnön toistavassa soittimessa on myös sekoitustoiminto
+    päällä, muuten se on pois päältä.
+
+    * albumin ja kappaleen kohdalla valinnaisesti seurattava `artistilta`/`bändiltä`/`yhtyeeltä` ja sitten
+    artistin nimi
+
+    * sen jälkeen valinnaisesti seurattava alueen tai laitteen nimi
+
+    * sen jälkeen, artistin, kappaleen, albumin tai soittolistan kohdalla, valinnaisesti seurattava lause
+    `radiotilassa`
+
+    #### Hyväksytyt muunnelmat
+
+    |Mediatyyppi|Hyväksytyt muunnelmat|
+    
+    |---|---|
+    
+    |`artisti`|`bändi`, `yhtye`|
+    
+    |`kappale`|`biisi`, `laulu`|
+    
+    |`radio`|`radioasema`|
+    
+    |`albumi`|`levy`|
+    
+    |`soittolista`||
+
+
+    #### Esimerkkejä
+
+    ```
+    Toista artisti Pink Floyd keittiössä
+    
+    Kuuntele albumi Jagged Little Pill työhuoneessa
+    
+    Soita levy Greatest Hits yhtyeeltä James Taylor keittiössä
+    
+    Toista kappale New Years Day makuuhuoneessa
+    
+    Toista kappale New Years Day makuuhuoneessa radiotilassa
+    
+    Toista biisi A Hard Days Night artistilta Billy Joel makuuhuoneessa
+    
+    Kuuntele soittolista Classic Rock työhuoneessa
+    
+    Kuuntele radioasema BBC Radio 1 makuuhuoneessa
+    
+    Toista levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
+    Toista yhtye U2
+    
+    Sekoita Musen kappaleet
+    
+    Sekoita levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
+    ```'
   input:
     default_player_entity_id_input:
       name: Oletussoitin
