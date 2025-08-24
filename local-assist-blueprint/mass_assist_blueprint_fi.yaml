@@ -1,6 +1,6 @@
 blueprint:
   domain: automation
-  name: Music Assistant - Paikallinen (vain) äänituki
+  name: Music Assistant - Puheohjaus paikallisella LLM:llä
   source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_fi.yaml
   description: ' ![Kuva](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
 
@@ -40,11 +40,17 @@ blueprint:
     #### Hyväksytyt muunnelmat
 
     |Mediatyyppi|Hyväksytyt muunnelmat|
+    
     |---|---|
+    
     |`artisti`|`bändi`, `yhtye`|
+    
     |`kappale`|`biisi`, `laulu`|
+    
     |`radio`|`radioasema`|
+    
     |`albumi`|`levy`|
+    
     |`soittolista`||
 
 
@@ -52,16 +58,27 @@ blueprint:
 
     ```
     Toista artisti Pink Floyd keittiössä
+    
     Kuuntele albumi Jagged Little Pill työhuoneessa
+    
     Kuuntele levy Greatest Hits yhtyeeltä James Taylor keittiössä
+    
     Toista kappale New Years Day makuuhuoneessa
+    
     Toista kappale New Years Day makuuhuoneessa radiotilassa
+    
     Toista biisi A Hard Days Night artistilta Billy Joel makuuhuoneessa
+    
     Kuuntele soittolista Classic Rock työhuoneessa
+    
     Kuuntele radioasema BBC Radio 1 makuuhuoneessa
+    
     Toista levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
     Toista yhtye U2
-    Sekoita Musen kappaleet.
+    
+    Sekoita Musen kappaleet
+    
     Sekoita levy Classical Nights makuuhuoneen Sonos-kaiuttimella
     ```'
   input:
