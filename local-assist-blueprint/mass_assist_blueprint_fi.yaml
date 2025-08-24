@@ -25,7 +25,7 @@ blueprint:
 
     Kaikkien lauseiden on:
 
-    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `bändi`, `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
+    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
     ja sen jälkeen kohteen nimi. Jos lause alkaa sanalla `Sekoita`, pyynnön toistavassa soittimessa on myös sekoitustoiminto
     päällä, muuten se on pois päältä.
 
@@ -112,8 +112,12 @@ blueprint:
               multiline: false
               multiple: true
           default:
+          # Vanha muoto: "soita levy <levyn nimi> yhtyeeltä <yhtyeen nimi>"
           - (sekoita|toista|kuuntele|soita) [ ](albumi|levy) {media_name} [(artistilta|bändiltä|yhtyeeltä)
             {artist}] [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+          # LISÄTTY: Uusi muoto: "soita bändin <yhtyeen nimi> levy <levyn nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artistin|bändin|yhtyeen) {artist} (albumi|levy)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
         track_trigger:
           name: Kappaleen liipaisin
           description: Liipaisinlauseet tietyn kappaleen pyytämiseksi.
@@ -122,8 +126,12 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (sekoita|toista|kuuntele) [ ](kappale|biisi|laulu) {media_name} [(artistilta|bändiltä|yhtyeeltä)
+          # Vanha muoto: "soita kappale <kappaleen nimi> artistilta <artistin nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](kappale|biisi|laulu) {media_name} [(artistilta|bändiltä|yhtyeeltä)
             {artist}] [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+          # LISÄTTY: Uusi muoto: "soita artistin <artistin nimi> kappale <kappaleen nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artistin|bändin|yhtyeen) {artist} (kappale|biisi|laulu)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
         artist_trigger:
           name: Artistin liipaisin
           description: Liipaisinlauseet musiikin pyytämiseksi tietyltä artistilta.
@@ -132,7 +140,14 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (sekoita|toista|kuuntele) [ ](artisti|bändi|yhtye) {media_name} [(huoneessa|soittimella|laitteella)
+          # Vanha muoto: "soita artisti <artistin nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artisti|bändi|yhtye) {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}][ radiotilassa]
+          # LISÄTTY: Uusi muoto: "soita musiikkia yhtyeeltä <yhtyeen nimi>"
+          - (sekoita|toista|kuuntele|soita) [musiikkia] (artistilta|bändiltä|yhtyeeltä)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+          # LISÄTTY: Uusi muoto: "soita <yhtyeen nimi>:n musiikkia"
+          - (sekoita|toista|kuuntele|soita) {media_name}:n [musiikkia] [(huoneessa|soittimella|laitteella)
             {area_or_player_name}][ radiotilassa]
         radio_trigger:
           name: Radion liipaisin
@@ -142,7 +157,7 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (sekoita|toista|kuuntele) [ ](radioasema|radio) {media_name} [(huoneessa|soittimella|laitteella)
+          - (sekoita|toista|kuuntele|soita) [ ](radioasema|radio) {media_name} [(huoneessa|soittimella|laitteella)
             {area_or_player_name}]
         playlist_trigger:
           name: Soittolistan liipaisin
@@ -152,7 +167,7 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (sekoita|toista|kuuntele) [ ]soittolista {media_name} [(huoneessa|soittimella|laitteella)
+          - (sekoita|toista|kuuntele|soita) [ ]soittolista {media_name} [(huoneessa|soittimella|laitteella)
             {area_or_player_name}][ radiotilassa]
         response_input:
           name: Vastaus Assistille
