@@ -252,7 +252,7 @@ action:
       artist: '{{ trigger.slots.artist | default }}'
       radio_mode: '{{ ''radio'' in trigger.sentence | lower }}'
     shuffle: '{{ ''sekoita'' in trigger.sentence | lower }}'
-- service: mass.play_media
+- service: music_assistant.play_media
   data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
   target:
     entity_id: '{{ mass_player_entity_id }}'
