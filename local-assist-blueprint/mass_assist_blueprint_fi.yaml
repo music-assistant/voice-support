@@ -80,6 +80,7 @@ blueprint:
     Sekoita Musen kappaleet
     
     Sekoita levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
     ```'
   input:
     default_player_entity_id_input:
