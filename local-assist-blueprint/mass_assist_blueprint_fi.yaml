@@ -1,0 +1,267 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - Puheohjaus paikallisella LLM:llä (Soitinparituksella)
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_fi.yaml
+  description: ' ![Kuva](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # Toista mediaa äänikomennoilla
+
+    ### Blueprintin asetukset
+
+    #### Vaaditut
+
+    * Aseta `Oletussoitin`, jota käytetään, kun pyynnössä ei mainita kohdetta
+    eikä pyyntö tule alueelta, jolla on Music Assistant -soitin.
+
+    #### Valinnaiset
+
+    * Muuta liipaisinlausetta tai lisää uusia. Voit myös käyttää tätä kääntääksesilauseen omalle kielellesi.
+    
+    * **Ääniavustajien ja soittimien paritus**: Määritä, ohjaako tietty ääniavustin aina tiettyä soitinta.
+
+
+    * Muuta vastauksia tai käännä ne omalle kielellesi.
+    
+    ### Käyttö
+
+    Kaikkien lauseiden on:
+
+    * alettava sanoilla `Sekoita`, `Toista`, `Kuuntele` tai `Soita`, jota seuraa mediatyyppi `artisti`/`kappale`/`albumi`/`soittolista`/`radio`
+    ja sen jälkeen kohteen nimi. Jos lause alkaa sanalla `Sekoita`, pyynnön toistavassa soittimessa on myös sekoitustoiminto
+    päällä, muuten se on pois päältä.
+
+    * albumin ja kappaleen kohdalla valinnaisesti seurattava `artistilta`/`bändiltä`/`yhtyeeltä` ja sitten
+    artistin nimi
+
+    * sen jälkeen valinnaisesti seurattava alueen tai laitteen nimi
+
+    * sen jälkeen, artistin, kappaleen, albumin tai soittolistan kohdalla, valinnaisesti seurattava lause
+    `radiotilassa`
+
+    #### Hyväksytyt muunnelmat
+
+    |Mediatyyppi|Hyväksytyt muunnelmat|
+    
+    |---|---|
+    
+    |`artisti`|`bändi`, `yhtye`|
+    
+    |`kappale`|`biisi`, `laulu`|
+    
+    |`radio`|`radioasema`|
+    
+    |`albumi`|`levy`|
+    
+    |`soittolista`||
+
+
+    #### Esimerkkejä
+
+    ```
+    Toista artisti Pink Floyd keittiössä
+    
+    Kuuntele albumi Jagged Little Pill työhuoneessa
+    
+    Soita levy Greatest Hits yhtyeeltä James Taylor keittiössä
+    
+    Toista kappale New Years Day makuuhuoneessa
+    
+    Toista kappale New Years Day makuuhuoneessa radiotilassa
+    
+    Toista biisi A Hard Days Night artistilta Billy Joel makuuhuoneessa
+    
+    Kuuntele soittolista Classic Rock työhuoneessa
+    
+    Kuuntele radioasema BBC Radio 1 makuuhuoneessa
+    
+    Toista levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
+    Toista yhtye U2
+    
+    Sekoita Musen kappaleet
+    
+    Sekoita levy Classical Nights makuuhuoneen Sonos-kaiuttimella
+    
+    ```'
+  input:
+    default_player_entity_id_input:
+      name: Oletussoitin
+      description: Soitin, jota käytetään, jos muuta soitinta ei tunnisteta komennosta tai kontekstista.
+      selector:
+        entity:
+          filter:
+          - integration: music_assistant
+            domain:
+            - media_player
+          multiple: false
+    assistant_player_map:
+      name: Ääniavustajien ja soittimien paritus
+      description: >
+        (Valinnainen) Määritä, mikä soitin liitetään mihinkin ääniavustajaan.
+        Jos komento tulee listatulta avustajalta, musiikki ohjataan aina määriteltyyn soittimeen.
+        Käytä YAML-muotoa, jossa avain on ääniavustajan entiteetti-ID ja arvo on soittimen entiteetti-ID.
+        Esimerkki:
+        
+        assist_satellite.keittion_aani: media_player.keittion_soitin
+        
+        assist_satellite.olohuoneen_aani: media_player.olohuoneen_kaiutinpari
+      selector:
+        object:
+      default: {}
+    trigger_response_settings:
+      name: Liipaisin- ja vastausasetukset Assistille
+      icon: mdi:chat
+      description: 'Voit muuttaa olemassa olevia liipaisimia tai lisätä uusia näissä
+        asetuksissa. Laita teksti hakasulkeiden [ ] väliin tehdäksesi siitä valinnaisen. Kaarisulkeilla
+        ( ) ja putkimerkillä | voit antaa useita arvoja, joita kohdellaan ''tai''-ehtona.
+        { query } on jokerimerkki, joka sisältää pyydetyn median ja valinnaisesti
+        alueen tai Music Assistant -soittimen.
+
+        Voit myös asettaa vastaukset, jotka Assist antaa. Se käyttää jinja-malleja, jotka
+        korvataan mediatiedoilla ja Music Assistant -soittimen nimellä.'
+      collapsed: true
+      input:
+        album_trigger:
+          name: Albumin liipaisin
+          description: Liipaisinlauseet tietyn albumin pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          # Muoto: "soita levy <levyn nimi> yhtyeeltä <yhtyeen nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](albumi|levy) {media_name} [(artistilta|bändiltä|yhtyeeltä)
+            {artist}] [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+          # Muoto: "soita bändin <yhtyeen nimi> levy <levyn nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artistin|bändin|yhtyeen) {artist} (albumi|levy)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+        track_trigger:
+          name: Kappaleen liipaisin
+          description: Liipaisinlauseet tietyn kappaleen pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          # Muoto: "soita kappale <kappaleen nimi> artistilta <artistin nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](kappale|biisi|laulu) {media_name} [(artistilta|bändiltä|yhtyeeltä)
+            {artist}] [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+          # Muoto: "soita artistin <artistin nimi> kappale <kappaleen nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artistin|bändin|yhtyeen) {artist} (kappale|biisi|laulu)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+        artist_trigger:
+          name: Artistin liipaisin
+          description: Liipaisinlauseet musiikin pyytämiseksi tietyltä artistilta.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          # Muoto: "soita artisti <artistin nimi>"
+          - (sekoita|toista|kuuntele|soita) [ ](artisti|bändi|yhtye) {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}][ radiotilassa]
+          # Muoto: "soita musiikkia yhtyeeltä <yhtyeen nimi>"
+          - (sekoita|toista|kuuntele|soita) [musiikkia] (artistilta|bändiltä|yhtyeeltä)
+            {media_name} [(huoneessa|soittimella|laitteella) {area_or_player_name}][ radiotilassa]
+        radio_trigger:
+          name: Radion liipaisin
+          description: Liipaisinlauseet tietyn radioaseman pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (sekoita|toista|kuuntele|soita) [ ](radioasema|radio) {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}]
+        playlist_trigger:
+          name: Soittolistan liipaisin
+          description: Liipaisinlauseet tietyn soittolistan pyytämiseksi.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (sekoita|toista|kuuntele|soita) [ ]soittolista {media_name} [(huoneessa|soittimella|laitteella)
+            {area_or_player_name}][ radiotilassa]
+        response_input:
+          name: Vastaus Assistille
+          description: Vastaus, jonka Assist antaa.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "Sekoitetaan" if "sekoita" in trigger.sentence | lower else "Toistetaan"
+            }} {{ trigger.slots.media_name }} soittimella {{ mass_player_name }}'
+trigger:
+- platform: conversation
+  command: !input album_trigger
+  id: album
+- platform: conversation
+  command: !input track_trigger
+  id: track
+- platform: conversation
+  command: !input artist_trigger
+  id: artist
+- platform: conversation
+  command: !input radio_trigger
+  id: radio
+- platform: conversation
+  command: !input playlist_trigger
+  id: playlist
+action:
+- variables:
+    assistant_player_map: !input assistant_player_map
+    default_player_entity_id: !input default_player_entity_id_input
+    area_or_player_name: '{{ trigger.slots.area_or_player_name | default }}'
+    player_entity_id_by_player_name: >-
+      {{ integration_entities('music_assistant') | select('match', 'media_player') |
+      expand | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)
+      | map(attribute='entity_id') | list }}
+    player_entity_id_by_area_name: >-
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') | list %}
+      {% set spoken_area_id = area_id(area_or_player_name) %}
+      {% if spoken_area_id %}
+        {{ area_entities(spoken_area_id) | select('in', ma_players) | list }}
+      {% else %}
+        []
+      {% endif %}
+    player_entity_id_by_assist_area: >-
+      {% set ma_players = integration_entities('music_assistant') | select('match', 'media_player') | list %}
+      {{ area_entities(area_id(trigger.device_id)) | select('in', ma_players) | list }}
+    mass_player_entity_id: >-
+      {% set player_map = assistant_player_map %}
+      {% set entities = device_entities(trigger.device_id) or [] %}
+      {% set mapped_player = namespace(id=none) %}
+      {% for entity in entities %}
+        {% if entity in player_map and mapped_player.id == none %}
+          {% set mapped_player.id = player_map[entity] %}
+        {% endif %}
+      {% endfor %}
+      {% if mapped_player.id != none %}
+        {{ [mapped_player.id] }}
+      {% else %}
+        {{ player_entity_id_by_player_name
+           or player_entity_id_by_area_name
+           or player_entity_id_by_assist_area
+           or [default_player_entity_id] }}
+      {% endif %}
+    mass_player_name: "{{ mass_player_entity_id | map('state_attr', 'friendly_name') | join(', ') }}"
+    action_data:
+      media_id: '{{ trigger.slots.media_name }}'
+      media_type: '{{ ''radio'' if ''radio'' in trigger.slots.media_name | lower else trigger.id }}'
+      artist: '{{ trigger.slots.artist | default }}'
+      radio_mode: '{{ ''radio'' in trigger.sentence | lower }}'
+    shuffle: '{{ ''sekoita'' in trigger.sentence | lower }}'
+- service: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- service: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- service: conversation.process
+  data:
+    text: !input response_input
+mode: single
