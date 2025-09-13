@@ -150,8 +150,8 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (shuffle|play|listen to) [the ](book|audio book|audiobook) {media_name} [(in|on|using)
-            [the ]{area_or_player_name}][ (with|using) {radio_mode}]
+          - (play|listen to) [the ](book|audio book|audiobook) {media_name} [(in|on|using)
+            [the ]{area_or_player_name}]
         radio_trigger:
           name: Radio trigger
           description: The trigger sentences to request a specific radio station.
