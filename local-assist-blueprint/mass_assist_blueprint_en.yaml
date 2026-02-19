@@ -233,6 +233,10 @@ actions:
       | select(''in'', ma_players) | list }}
 
       '
+    player_entity_id_by_trigger_device_id: |
+      {{ ma_players | expand 
+        | selectattr('name', 'match', triggered_media_player ~ '$', ignorecase=true)
+        | map(attribute='entity_id') | list }}
     mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
       \nor player_entity_id_by_trigger_device_id or player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
     mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
