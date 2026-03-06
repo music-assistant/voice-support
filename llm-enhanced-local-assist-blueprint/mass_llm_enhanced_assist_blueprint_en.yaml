@@ -498,7 +498,10 @@ actions:
   response_variable: result
 - alias: Store relevant part of LLM result in variable and define target
   variables:
-    llm_result: '{{ result.response.speech.plain.speech | from_json }}'
+    llm_result: >-
+      {% set response = result.response.speech.plain.speech %}
+      {% set clean = response | regex_replace('```json\n?', '') | regex_replace('\n?```', '') | trim %}
+      {{ clean | from_json }}
     play_continuously: !input play_continuously
     llm_action_data:
       media_id: '{{ llm_result.action_data.media_id }}'
@@ -513,14 +516,13 @@ actions:
         []) %} {% set players = players | join(''|'') if players is list else players
         %} {{ integration_entities(''music_assistant'') | expand | selectattr(''name'',
         ''in'', player_names.split('', '') | select(''search'', players, ignorecase=true)
-        | list) | map(attribute=''entity_id'') | select('search', '^media_player.') | 
-        list if players else [] }}'
+        | list) | map(attribute=''entity_id'') | select(''search'', ''^media_player.'')
+        | list if players else [] }}'
       area_id: '{% set areas = llm_result.get(''target_data'', {}).get(''areas'',
         []) %} {% set areas = areas | join(''|'') if areas is list else areas %} {{
         area_names.split('', '') | select(''search'', areas, ignorecase=true) | map(''area_id'')
         | list if areas else [] }}'
-    llm_target: '{{ iif(llm_result.get(''target_data'', {}).get(''players'') or llm_result.get(''target_data'',
-      {}).get(''areas'')) }}'
+    llm_target: '{{ iif(llm_target_data.entity_id or llm_target_data.area_id) }}'
     device_area: '{{ area_id(trigger.device_id) if area_name(trigger.device_id) in
       area_names.split('', '') }}'
     default_player: !input default_player
