@@ -513,7 +513,7 @@ actions:
         []) %} {% set players = players | join(''|'') if players is list else players
         %} {{ integration_entities(''music_assistant'') | expand | selectattr(''name'',
         ''in'', player_names.split('', '') | select(''search'', players, ignorecase=true)
-        | list) | map(attribute=''entity_id'') | select('search', '^media_player.') | 
+        | list) | map(attribute=''entity_id'') | select(''search'', ''^media_player.'') | 
         list if players else [] }}'
       area_id: '{% set areas = llm_result.get(''target_data'', {}).get(''areas'',
         []) %} {% set areas = areas | join(''|'') if areas is list else areas %} {{
