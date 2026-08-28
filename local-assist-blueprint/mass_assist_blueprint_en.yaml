@@ -217,6 +217,10 @@ actions:
       artist: '{{ trigger.slots.artist | default }}'
       radio_mode: '{{ ''radio'' in trigger.slots.radio_mode | default | lower }}'
     ma_players: '{{  integration_entities(''music_assistant'') | select(''match'', ''media_player'') | list }}'
+    triggered_media_player: |
+      {{ device_entities(trigger.device_id) 
+          | select('match', 'media_player.') 
+          | list | first }}
     player_entity_id_by_player_name: "{{ ma_players |
       expand \n  | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true)\n
       \ | map(attribute='entity_id') | list }}\n"
@@ -229,8 +233,12 @@ actions:
       | select(''in'', ma_players) | list }}
 
       '
+    player_entity_id_by_trigger_device_id: |
+      {{ ma_players | expand 
+        | selectattr('name', 'match', triggered_media_player ~ '$', ignorecase=true)
+        | map(attribute='entity_id') | list }}
     mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
-      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
+      \nor player_entity_id_by_trigger_device_id or player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
     mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
       | join('', '') }}'
 - alias: Send media to selected Music Assistant Player
