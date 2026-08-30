@@ -9,6 +9,12 @@ blueprint:
     but your specific LLM integration may need some fine-tuning. To do that, adjust
     the prompts sent to the LLM.
 
+    * Some LLM integrations that pass OpenAI-style JSON tool calls (for example
+      `michelle-avery/custom-conversation` with a local OpenAI-compatible server) may
+      fail if the `shuffle` script field is a boolean selector while the model emits
+      JSON booleans. This blueprint uses a string `shuffle` field (`"true"` / `"false"`)
+      and normalizes it to a boolean for `media_player.shuffle_set`.
+
     * **Make sure to expose the script to Assist after creating it.**
 
     * **Make sure to give the script a clear description.** An example can be found
@@ -69,7 +75,7 @@ blueprint:
     
     |`shuffle`|Whether or not to turn on the shuffle setting on the player that handles the request.
     It will be set based on whether or not the request mentions wanting to shuffle the music.
-    The value will either be true or false.|'
+    For JSON tool calls, use the strings `"true"` or `"false"` (not bare JSON booleans).|'
   domain: script
   author: TheFes
   homeassistant:
@@ -273,6 +279,10 @@ blueprint:
 
             If the request is "Play the artist Guns and Roses", "shuffle" should be set to false, since the request 
             does not mention or request to shuffle.
+
+            When calling this tool as JSON, always use the JSON strings "true" and "false"
+            for the shuffle value (not unquoted JSON booleans), so Home Assistant can accept
+            the tool arguments from OpenAI-compatible LLM integrations.
             '
     addition_conditions_actions:
       name: Additional actions
@@ -349,14 +359,14 @@ fields:
     description: !input media_player_prompt
   shuffle:
     selector:
-      boolean:
+      text:
     name: Shuffle
     description: !input shuffle_prompt
 sequence:
 - variables:
-    version: 20250526
+    version: 20260416
     default_player: !input default_player
-    shuffle: '{{ shuffle | default(false, true) | bool(false) }}'
+    shuffle: '{% set s = shuffle | default(false, true) %}{{ (s if s is sameas true or s is sameas false else (s | string | lower | trim) in [''true'', ''1'', ''yes'', ''on'']) | bool }}'
     player_data: '{% set ma = integration_entities(''music_assistant'') %}
 
       {% set ma_names = ma | map(''state_attr'', ''friendly_name'') | list %}
