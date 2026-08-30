@@ -1,0 +1,570 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - שליטה קולית מקומית בעזרת LLM (Blueprint בעברית)
+  source_url: https://github.com/music-assistant/voice-support/blob/main/llm-enhanced-local-assist-blueprint/mass_llm_enhanced_assist_blueprint_he.yaml
+  description: '![תמונה](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # השמעת מדיה באמצעות פקודות קוליות בעזרת LLM
+
+
+    ### הגדרת ה-Blueprint
+
+    #### חובה
+
+    * בחר סוכן שיחה (Conversation Agent) מבוסס LLM שישמש את האוטומציה. ה-Blueprint
+    מיועד לשימוש עם סוכן LLM ללא שליטה ישירה על הבית (No control). אם תשתמש ב-LLM
+    עם שליטה על הישויות, ייתכן שתתקל בשגיאות. במקרה זה עדיף להשתמש ב-Option 3 (Script).
+
+
+    #### אופציונלי
+
+    * הגדר `נגן ברירת מחדל` שישמש כאשר לא ברור מהבקשה באיזה אזור או נגן יש להפעיל.
+
+    * שנה את ההגדרה ל-`מצב רדיו`. ברירת המחדל היא להשתמש בהגדרת `Don''t stop the
+    music` של הנגן.
+
+    * שנה את משפט ההפעלה או הוסף עוד, ניתן גם להשתמש בזה כדי לתרגם את המשפט לשפה אחרת.
+
+    * שנה את התגובות או תרגם אותן.
+
+    * שנה את ההגדרה לחשיפת שמות אזורים ושמות נגנים ל-LLM. ברירת המחדל היא לחשוף אותם.
+    אם תכבה את החשיפה, השם בבקשה חייב להתאים בדיוק לשם האזור או הנגן ב-Home Assistant.
+    לדוגמה, אם שם האזור הוא _חדר השינה של שי_ ולא יעבוד אם תאמר _החדר של שי_, או אם
+    ה-STT יתעתק _חי_ במקום _שי_. לצערנו לא ניתן להשתמש ב-aliases באוטומציה.
+
+    * שנה את הפרומפט שמנחה את ה-LLM לספק את הנתונים הנכונים. אין צורך לתרגם אם אתה
+    משתמש בשפה אחרת — ה-LLM יבין.
+
+
+    ### שימוש
+
+    כל המשפטים חייבים:
+
+    * להתחיל באחד מהפעלים `נגן`, `תנגן`, `השמע`, `תשמיע`, `שים`, `תשים`, `הפעל`, `תפעיל`,
+    `האזן`, `תאזין` או `ערבב` / `תערבב` (לערבוב אקראי), ולאחר מכן תיאור של מה שאתה
+    רוצה לשמוע.
+
+    * אם המשפט מתחיל ב-`ערבב` (או `שאפל`), הנגן יקבל הגדרת ערבוב מופעלת. אחרת היא תכבה.
+
+    * אפשר לציין שם אזור אחד או יותר ו/או שם נגן אחד או יותר.
+
+
+    ### איך נקבע יעד ההשמעה:
+
+    1. אם בבקשה צוין אזור אחד או יותר ו/או נגן Music Assistant אחד או יותר, הם ישמשו.
+    אם לא חשפת את השמות, ושם האזור או הנגן בבקשה לא תואם בדיוק לשם ב-Home Assistant,
+    Assist יחזיר את `תגובה ללא יעד`.
+
+    2. אם לא צוין יעד בבקשה, האוטומציה תבדוק קודם אם הבקשה הגיעה ממכשיר באזור מסוים.
+    אם יש גם נגן Music Assistant באותו אזור, המוסיקה תושמע שם.
+
+    3. אם לא צוין יעד בבקשה ולא ניתן היה להשתמש באזור של הלוויין הקולי, אז ישמש
+    `נגן ברירת המחדל` שהוגדר ב-Blueprint. אם לא הוגדר `נגן ברירת מחדל`, תוחזר `תגובה
+    ללא יעד`.
+
+
+    #### דוגמאות
+
+    ```
+
+    תנגן את השירים הכי טובים של Pink Floyd במטבח
+
+    השמע את Jagged Little Pill בחדר העבודה
+
+    תשמיע את האלבום Greatest Hits של James Taylor במטבח
+
+    תנגן את השיר New Years Day בחדר השינה
+
+    שים לי את השיר A Hard Days Night של Billy Joel בחדר השינה
+
+    האזן לפלייליסט Classic Rock בחדר העבודה
+
+    תשמיע את גלגלצ בחדר השינה
+
+    תנגן את האלבום Classical Nights בסונוס של חדר השינה
+
+    תנגן שירים של U2
+
+    תנגן מוסיקה של המלחין מאופנהיימר
+
+    תנגן את האלבום עם התינוק שצוחה במים בעטיפה
+
+    ערבב שירים של Muse
+
+    תערבב את האלבום Classical Nights בסונוס של חדר השינה
+
+    ```'
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    llm_agent:
+      name: סוכן שיחה מבוסס LLM
+      description: סוכן ה-LLM שיעבד את הבקשה
+      selector:
+        entity:
+          filter:
+          - domain:
+            - conversation
+          multiple: false
+    music_assistant_settings:
+      name: הגדרות Music Assistant להשמעה
+      icon: mdi:music
+      description: בהגדרות אלו ניתן להתאים את אופן הטיפול בהשמעת Music Assistant
+      input:
+        default_player:
+          name: נגן ברירת מחדל
+          description: 'נגן ה-Music Assistant ברירת המחדל שישמש כאשר לא ברור מהבקשה
+            באיזה אזור או על איזה נגן להשמיע.
+
+            השאר ריק אם אינך רוצה נגן ברירת מחדל.'
+          selector:
+            entity:
+              filter:
+              - integration: music_assistant
+                domain:
+                - media_player
+              multiple: false
+          default:
+        play_continuously:
+          name: מצב רדיו
+          description: 'קובע אם להגדיר את "radio_mode" עבור פעולת ההשמעה.
+
+            כאשר מוגדר ל-"השתמש בהגדרת הנגן" - ישתמש בהגדרת "Don''t stop the music"
+            של הנגן.
+
+            כאשר מוגדר ל-"תמיד" - הנגן ימשיך להוסיף שירים חדשים לתור באופן רציף.
+
+            כאשר מוגדר ל-"אף פעם" - הנגן יפסיק לאחר השירים שבחר ה-LLM.'
+          selector:
+            select:
+              options:
+              - השתמש בהגדרת הנגן
+              - תמיד
+              - אף פעם
+              multiple: false
+              custom_value: false
+              sort: false
+          default: השתמש בהגדרת הנגן
+    response_settings:
+      name: הגדרות הפעלה ותגובה ל-Assist
+      icon: mdi:chat
+      description: 'כאן ניתן להגדיר את התגובות ש-Assist ייתן. <media_info> יוחלף בתיאור
+        המדיה המבוקשת. ניתן להשתמש ב-<area_info> וב-<player_info> שיוחלפו בשמות האזורים
+        או הנגנים.
+
+        סעיף זה מאפשר גם להשתמש בסקריפט בשפה אחרת ע"י תרגום השדות.'
+      collapsed: true
+      input:
+        trigger:
+          name: משפטי הפעלה לשיחה
+          description: כאן ניתן להוסיף משפטי הפעלה או לשנות אותם. שים טקסט בין סוגריים
+            מרובעים [ ] כדי להפוך אותו לאופציונלי. עם סוגריים עגולים ( ) ותו צינור |
+            ניתן להזין מספר ערכים שיטופלו כ-"או". `{ query }` הוא ערך גמיש שיכיל את
+            המדיה המבוקשת ואופציונלית גם את שם האזור או הנגן.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י]|ערבב[י]|תערבב[י])
+            [לי] {query}
+        combine_text:
+          name: מילת חיבור
+          description: מילה זו תשמש בתגובה כאשר יש יותר מאזור או נגן אחד. למשל, אם
+            מבקשים השמעה בסלון ובמטבח, התגובה תכלול "סלון <ו> מטבח". <ו> יוחלף בערך
+            מפרמטר זה.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: וגם
+        no_target_response:
+          name: תגובה ללא יעד
+          description: Assist יחזיר תגובה זו אם לא ניתן היה לקבוע יעד ולא הוגדר נגן
+            ברירת מחדל
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: לא הצלחתי לקבוע יעד להשמעה ולא הוגדר נגן ברירת מחדל
+        area_response:
+          name: תגובה לאזור
+          description: Assist יחזיר תגובה זו כאשר המטרה היא אזורים בלבד
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "מערבב" if (("ערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence)) else "מנגן" }} <media_info> ב<area_info>'
+        player_response:
+          name: תגובה לנגן
+          description: Assist יחזיר תגובה זו כאשר המטרה היא נגני Music Assistant בלבד
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "מערבב" if (("ערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence)) else "מנגן" }} <media_info> ב<player_info>'
+        area_and_player_response:
+          name: תגובה לאזור ולנגן
+          description: Assist יחזיר תגובה זו כאשר היעד כולל גם אזורים וגם נגנים
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "מערבב" if (("ערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence)) else "מנגן" }} <media_info> ב<area_info> וגם ב<player_info>'
+    prompt_settings:
+      name: הגדרות הפרומפט ל-LLM
+      icon: mdi:robot
+      description: בהגדרות אלו ניתן לכוונן את הפרומפטים עבור ה-LLM הספציפי שלך. ברוב
+        המקרים ברירת המחדל מתאימה.
+      collapsed: true
+      input:
+        expose_players:
+          name: חשוף שמות נגני Music Assistant
+          description: בטל כדי לא לחשוף את שמות נגני Music Assistant ל-LLM. אם תכבה,
+            כל שם נגן בבקשה חייב להתאים בדיוק לשם ב-Home Assistant
+          selector:
+            boolean: {}
+          default: true
+        expose_areas:
+          name: חשוף אזורים עם נגני Music Assistant
+          description: בטל כדי לא לחשוף את שמות האזורים שיש בהם נגני Music Assistant
+            ל-LLM. אם תכבה, כל שם אזור בבקשה חייב להתאים בדיוק לשם ב-Home Assistant
+          selector:
+            boolean: {}
+          default: true
+        llm_prompt_intro:
+          name: הקדמה לפרומפט LLM
+          description: הקדמה כדי שה-LLM יבין את מטרת השיחה
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'You are an AI process that transforms a music search query into
+            a structured JSON. For every query, you must research and provide specific
+            details—such as titles, artist names, or album names—if they are not directly
+            mentioned in the query. For example, if the query is "play the latest
+            album by Foo Fighters," you should research the latest album title and
+            include it in the JSON response. If the query specifies only an artist,
+            album, or playlist, provide details as appropriate without assuming unspecified
+            specifics. The user may speak in Hebrew or in English; understand both
+            and respond with the structured JSON regardless of the input language.
+
+            This is the voice command query provided by the user: "{{ trigger.sentence
+            }}"
+
+
+            Here is the structured JSON that I expect in response {"action_data":
+            {"media_id":"name", "media_type":"type", "artist":"name", "album":"name"},
+            "media_description": "description of media", "target_data": {"areas":
+            ["area name"], "players": ["player name"]}}'
+        llm_prompt_media_type:
+          name: פרומפט עבור media_type
+          description: הסבר על הפרמטר "media_type" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'The argument "media_type" is mandatory and must always be provided
+            no matter what!
+
+            "media_type" can only be one of 5 different values:
+
+            - "track" if the search is about a specific track or a list of tracks.
+
+            - "album" if the search is about an album or a list of albums.
+
+            - "artist" if the search is about an artist.
+
+            - "playlist" if the search specifically requests a playlist.
+
+            - "radio" in case the search is a radio channel.
+
+            media_type is mandatory and must always be provided. In case a request
+            does not match any of these types, for example when music from a specific
+            genre is requested, then use "track" and provide a list of matching songs
+            for the "media_id" parameter.
+
+            Hebrew hints for matching: שיר/רצועה → "track"; אלבום/תקליט/דיסק → "album";
+            אמן/אמנית/זמר/זמרת/להקה/הרכב → "artist"; פלייליסט/רשימת השמעה → "playlist";
+            רדיו/תחנת רדיו → "radio".'
+        llm_prompt_media_id:
+          name: פרומפט עבור media_id
+          description: הסבר על הפרמטר "media_id" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'The argument "media_id" is also mandatory and must always be provided
+            no matter what!
+
+            media_id is the most specific from track, album, and artist.
+
+            "track" and "artist" can be a single value or multiple values.
+
+            - If the search is about a track: Then media_id is the track name or a
+            json formatted list of track names. In case there are multiple artists
+            in the result, use both the artist name and song name separated by a dash
+            as track name (example: "Artist name - Song name"). In case all songs
+            are from the same artist, use the artist for the "artist" parameter, and
+            only use the song names as track name.
+
+            - If the search is about an album: Then media_id is the album name or
+            a json formatted list of album names.
+
+            - If the search is about an artist: Then media_id is the artist name.
+
+            - If the search is a specific playlist: Then media_id is the requested
+            playlist.
+
+            - If the search is a radio channel: Then media_id is the requested channel.
+
+            "media_id" is a mandatory argument and must always be provided.
+
+            When the request comes in Hebrew, transliterate names to their commonly
+            used form (Hebrew or English as the artist is normally credited in catalogs).
+            For Israeli artists keep Hebrew names (e.g., עומר אדם, שלמה ארצי). For
+            international artists prefer the English/Latin name (e.g., "Pink Floyd"
+            not "פינק פלויד"). For Israeli radio stations keep Hebrew names (e.g.,
+            גלגלצ, רשת ב, כאן 88).'
+        llm_prompt_artist_album:
+          name: פרומפט עבור artist ו-album
+          description: הסבר על הפרמטרים "album" ו-"artist" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'In case it is needed, the fields "artist" and "album" can be used
+            to further restrict the search.
+
+            For example, if the input is "Hells Bells by ACDC", then the output should
+            be {"action_data":{"media_id":"Hells Bells", "media_type":"track", "artist":"AC/DC"}}
+
+            Hebrew example: if the input is "תנגן את אם ננעלו של עומר אדם", then the
+            output should be {"action_data":{"media_id":"אם ננעלו", "media_type":"track",
+            "artist":"עומר אדם"}}.
+
+            "artist" and "album" are optional and never used in the case of a playlist
+            search.'
+        llm_prompt_examples:
+          name: דוגמאות action_data ל-LLM
+          description: דוגמאות עבור ה-"action_data" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'There can be several types of answers for the "action_data" dictionary.
+            Here are some examples:
+
+            Just an artist >> {"action_data":{"media_id": "artist name", "media_type":"artist"}}.
+
+            An album by an artist >> {"action_data":{"media_id": "album name", "media_type": "album",
+            "artist": "artist name"}}.
+
+            A track by an artist >> {"action_data":{"media_id": "track name", "media_type": "track",
+            "artist": "artist name"}}.
+
+            Just a track if the artist is not known >> {"action_data":{"media_id": "track name",
+            "media_type": "track"}}.
+
+            Just a playlist if the request is a specific playlist >> {"action_data":{"media_id":"playlist
+            name", "media_type":"playlist"}}.
+
+            Multiple tracks of different artists >> {"action_data":{"media_id": ["Artist name - Song
+            name", "Another artist name - Another song name", "Another artist name
+            - Another song name"], "media_type":"track"}}.
+
+            Multiple tracks of the same artist >> {"action_data":{"media_id": ["Song name", "Another
+            song name"], "artist": "artist name", "media_type":"track"}}'
+        llm_prompt_media_description:
+          name: פרומפט עבור media_description
+          description: הסבר על ה-"media_description" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'The "media_description" key is used to describe the media which
+            will be played. This can be taken from the voice command query, but it
+            should be only the part which is relevant for the media. So if the voice
+            request is "Play the best Queen songs on the living room player" the value
+            for "media_description" should be "the best Queen songs".
+
+            When the voice request is in Hebrew, the "media_description" should be
+            in Hebrew as well (it will be spoken back to the user). For example, if
+            the request is "תנגן את השירים הכי טובים של עומר אדם בסלון", then "media_description"
+            should be "השירים הכי טובים של עומר אדם".'
+        llm_prompt_target:
+          name: פרומפט עבור target_data
+          description: הסבר על ה-"target_data" בפלט
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'The "target_data" key is used to define the information on which
+            the request should be played.
+
+            {% if expose_areas %}These are the area names which have a Music Assistant
+            player: {{ area_names }}. Only use these area names for the "target_data".
+            In case another area description is used in the request, try to map it
+            to one of these area names." {% endif %}
+
+            In case the query requests the music to be played in one or more areas
+            {% if expose_areas %}in which a Music Assistant player is located{% endif
+            %}, use {"areas": ["area name"]} for "target_data". Always use a list
+            with area names, even when there is only one. {% if expose_areas %}Try
+            to match the areas mentioned in the request to the provided area names.
+            Only use area names from the list provided. {% else %}Do not include articles
+            like "the" at the start of the area name. Also strip Hebrew prefixes
+            ב/ל/מ/כ/ש and ה from the start of the name. So if the request is "תנגן
+            את עומר אדם במטבח" use "מטבח" as the area name. Besides removing the prefix,
+            use exactly what was provided in the request.{% endif %}When no area is
+            mentioned in the voice request{% if expose_areas %} or no area could be
+            matched{% endif %}, use {"areas":[]}
+
+            {% if expose_players %}These are the Music Assistant players in the system:
+            {{ player_names }}. Only use these names for the "target_data". In case
+            another player name is mentioned in the request, try to map it to one
+            of these player names.{% endif %}
+
+            In case the query requests the music to be played on one or more media
+            players, use {"players": ["player name"]} for "target_data". Always use
+            a list with player names, even when there is only one. {% if expose_players
+            %}Try to match the players mentioned in the request to the provided player
+            names. Only use player names from the list provided. {% else %}Do not
+            include articles like "the" at the start of the player name. Also strip
+            Hebrew prefixes ב/ל/מ/כ/ש and ה from the start of the name. So if the
+            request is "תנגן עומר אדם על הסונוס של חדר השינה" use "סונוס של חדר השינה"
+            as the player name. Besides removing the prefix, use exactly what was
+            provided in the request.{% endif %}When no player is mentioned in the
+            voice request{% if expose_players %} or no player could be matched{% endif
+            %}, use {"players":[]}'
+        llm_prompt_outro:
+          name: סיום פרומפט LLM
+          description: הערות אחרונות והסבר נוסף ל-LLM
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: 'Note that the input query can be in a different language, including
+            Hebrew. For the "media_type" use the untranslated English terms (track,
+            album, artist, playlist, radio). For "media_description" use the same
+            language as the input.
+
+
+            IMPORTANT: You must reply with only the JSON model, nothing before nor
+            after because your response will be processed by a search component of
+            a media player service. So also no code tags. Only the JSON!'
+        llm_prompt:
+          name: פרומפט LLM legacy
+          description: שדה זה מכיל את פרומפט ה-LLM שהיה לפני שהפרומפט פוצל לחלקים.
+            כברירת מחדל הוא ריק. אם הוא מכיל ערך, זה רק כדי שתוכל להעתיק שינויים חזרה
+            לחלק הרלוונטי לעיל - הוא לא ישמש באוטומציה
+          selector:
+            text:
+              multiline: true
+              multiple: false
+          default: ''
+triggers:
+- alias: הפעלת בקשת מוסיקה
+  trigger: conversation
+  command: !input trigger
+actions:
+- alias: שמירת הקלט מה-Blueprint במשתנים לשימוש בפרומפט
+  variables:
+    version: 20250404-he
+    shuffle: '{{ ("ערבב" in trigger.sentence) or ("תערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence) or ("shuffle" in trigger.sentence | lower) }}'
+    expose_areas: !input expose_areas
+    expose_players: !input expose_players
+    prompt:
+      intro: !input llm_prompt_intro
+      media_type: !input llm_prompt_media_type
+      media_id: !input llm_prompt_media_id
+      artist_album: !input llm_prompt_artist_album
+      examples: !input llm_prompt_examples
+      description: !input llm_prompt_media_description
+      target: !input llm_prompt_target
+      outro: !input llm_prompt_outro
+    area_names: '{{ integration_entities("music_assistant")  | map("area_name")
+      | reject("none") | join(", ") }}'
+    player_names: '{{ integration_entities("music_assistant") | map("state_attr",
+      "friendly_name") | join(", ") }}'
+- alias: שליחת הבקשה ל-LLM
+  action: conversation.process
+  data:
+    text: '{{ prompt.values() | join("
+
+
+      ") }}'
+    agent_id: !input llm_agent
+  response_variable: result
+- alias: שמירת החלק הרלוונטי מתוצאת ה-LLM במשתנה והגדרת היעד
+  variables:
+    llm_result: '{{ result.response.speech.plain.speech | from_json }}'
+    play_continuously_raw: !input play_continuously
+    play_continuously: '{{ "Always" if play_continuously_raw == "תמיד" else ("Never" if play_continuously_raw == "אף פעם" else "Use player settings") }}'
+    llm_action_data:
+      media_id: '{{ llm_result.action_data.media_id }}'
+      media_type: '{{ llm_result.action_data.media_type }}'
+      artist: '{{ llm_result.action_data.artist | default("NA", true) }}'
+      album: '{{ llm_result.action_data.album | default("NA", true) }}'
+      radio_mode: '{{ false if play_continuously == "Never" else play_continuously
+        == "Always" and llm_result.action_data.media_type != "radio" or "NA" }}'
+    llm_target_data:
+      entity_id: '{% set players = llm_result.get("target_data", {}).get("players",
+        []) %} {% set players = players | join("|") if players is list else players
+        %} {{ integration_entities("music_assistant") | expand | selectattr("name",
+        "in", player_names.split(", ") | select("search", players, ignorecase=true)
+        | list) | map(attribute="entity_id") | select("search", "^media_player.") |
+        list if players else [] }}'
+      area_id: '{% set areas = llm_result.get("target_data", {}).get("areas",
+        []) %} {% set areas = areas | join("|") if areas is list else areas %} {{
+        area_names.split(", ") | select("search", areas, ignorecase=true) | map("area_id")
+        | list if areas else [] }}'
+    llm_target: '{{ iif(llm_result.get("target_data", {}).get("players") or llm_result.get("target_data",
+      {}).get("areas")) }}'
+    device_area: '{{ area_id(trigger.device_id) if area_name(trigger.device_id) in
+      area_names.split(", ") }}'
+    default_player: !input default_player
+    backup_target: '{{ (dict(area_id=[device_area]) if device_area) or (dict(entity_id=[default_player])
+      if default_player) }}'
+    target_data: '{{ (llm_target_data if llm_target else backup_target) | default({},
+      true) }}'
+    target: '{{ dict(target_data.items() | selectattr("1")) }}'
+- alias: ניסיון להשמיע רק אם נקבע יעד
+  if:
+  - alias: בדיקה האם ניתן היה לקבוע יעד
+    condition: template
+    value_template: '{{ iif(target) }}'
+  then:
+  - alias: השמעת מוסיקה לפי תוצאת ה-LLM
+    action: music_assistant.play_media
+    data: '{{ dict(llm_action_data.items() | rejectattr("1", "eq", "NA")) }}'
+    target: '{{ target }}'
+  - alias: הפעלה/כיבוי של מצב ערבוב בנגן Music Assistant
+    action: media_player.shuffle_set
+    data:
+      shuffle: '{{ shuffle }}'
+    target: '{{ target }}'
+- alias: הגדרת משתנים לתגובות
+  variables:
+    combine: !input combine_text
+    responses:
+      no_target: !input no_target_response
+      only_area: !input area_response
+      only_player: !input player_response
+      area_player: !input area_and_player_response
+    response: '{% if iif(target.get("area_id") and target.get("entity_id")) %} area_player
+      {% elif iif(target.get("area_id")) %} only_area {% elif iif(target.get("entity_id"))
+      %} only_player {% else %} no_target {% endif %}'
+    area_list: '{{ target.get("area_id", []) | map("area_name") | list }}'
+    area_info: '{{ area_list[:-1] | join(", ") ~ " " ~ combine ~ " " ~ area_list[-1]
+      if area_list | count > 2 else area_list | join(" " ~ combine ~ " ") }}'
+    player_list: '{{ target.get("entity_id") | map("state_attr", "friendly_name")
+      | list }}'
+    player_info: '{{ player_list[:-1] | join(", ") ~ " " ~ combine ~ " " ~ player_list[-1]
+      if player_list | count > 2 else player_list | join(" " ~ combine ~ " ") }}'
+    media_info: '{{ llm_result.media_description | default(llm_action_data.media_id,
+      true) }}'
+- alias: הגדרת התגובה ל-Assist
+  set_conversation_response: '{{ responses[response] | replace("<media_info>", media_info)
+    | replace("<area_info>", area_info) | replace("<player_info>", player_info) }}'
+mode: parallel

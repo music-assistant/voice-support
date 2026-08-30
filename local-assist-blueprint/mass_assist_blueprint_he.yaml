@@ -1,0 +1,263 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - שליטה קולית מקומית (Blueprint בעברית)
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_he.yaml
+  description: ' ![תמונה](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # השמעת מדיה באמצעות פקודות קוליות
+
+    ### הגדרת ה-Blueprint
+
+    #### חובה
+
+    * הגדר `נגן ברירת מחדל` שישמש כאשר לא צוין יעד בבקשה והבקשה לא מגיעה מאזור שבו
+    יש נגן Music Assistant.
+
+    #### אופציונלי
+
+    * שנה את משפטי ההפעלה או הוסף עוד. ניתן גם להשתמש בזה כדי לתרגם את המשפטים
+    לשפה שלך.
+
+    * שנה את התגובות או תרגם אותן לשפה שלך.
+
+
+    ### שימוש
+
+    כל המשפטים חייבים:
+
+    * להתחיל באחד מהפעלים `נגן`, `תנגן`, `השמע`, `תשמיע`, `שים`, `תשים`, `הפעל`, `תפעיל`,
+    `האזן`, `תאזין` או `ערבב` / `תערבב` (לערבוב אקראי), לאחריו סוג הפריט
+    `אלבום` / `שיר` / `אמן` / `פלייליסט` / `רדיו` ואז שם הפריט.
+
+    * אם המשפט מתחיל ב-`ערבב` (או `שאפל`), הנגן שמשמיע את הבקשה יקבל גם הגדרת ערבוב
+    מופעלת. אחרת היא תכבה.
+
+    * עבור אלבום ושיר אפשר להוסיף `של [ה](אמן|זמר|להקה)` ואז שם האמן.
+
+    * אחר כך אפשר להוסיף שם אזור או שם מכשיר.
+
+    * עבור אמן, שיר, אלבום או פלייליסט אפשר לסיים עם המילים `במצב רדיו`.
+
+    #### וריאציות מקובלות
+
+    השימוש בה"א הידיעה (`ה`) הוא אופציונלי בכל מקום.
+
+    גם הצורות הנקבה והזכר של הפעלים מקובלות (לדוגמה: `נגני`, `תשמיעי`).
+
+    |סוג מדיה|וריאציות מקובלות|
+
+    |---|---|
+
+    |`אמן`|`זמר`, `זמרת`, `להקה`, `הרכב`|
+
+    |`שיר`|`רצועה`|
+
+    |`אלבום`|`תקליט`, `דיסק`, `אוסף`|
+
+    |`רדיו`|`תחנת רדיו`, `תחנה`|
+
+    |`פלייליסט`|`רשימת השמעה`|
+
+    |`ספר שמע`|`אודיובוק`, `ספר מוקלט`|
+
+
+    #### דוגמאות
+
+    ```
+
+    תנגן את האמן Pink Floyd במטבח
+
+    השמע את האלבום Jagged Little Pill בחדר העבודה
+
+    תשמיע את האלבום Greatest Hits של James Taylor במטבח
+
+    תנגן את השיר New Years Day בחדר השינה
+
+    תנגן את השיר New Years Day בחדר השינה במצב רדיו
+
+    שים לי את השיר A Hard Days Night של Billy Joel בחדר השינה
+
+    תשמיע את הפלייליסט Classic Rock בחדר העבודה
+
+    האזן לתחנת הרדיו גלגלצ במטבח
+
+    תנגן את האלבום Classical Nights בסונוס של חדר השינה
+
+    הפעל את הלהקה U2
+
+    ערבב שירים של עומר אדם
+
+    תערבב את האלבום Classical Nights על הרמקול של חדר השינה
+
+    תשמיע את ספר השמע פיקניק בצד הדרך
+
+    ```'
+  input:
+    default_player_entity_id_input:
+      name: נגן מדיה ברירת מחדל
+      description: הנגן שישמש כאשר לא צוין נגן או אזור בבקשה והבקשה לא מגיעה מאזור עם נגן Music Assistant
+      selector:
+        entity:
+          filter:
+          - integration: music_assistant
+            domain:
+            - media_player
+          multiple: false
+    trigger_response_settings:
+      name: הגדרות הפעלה ותגובה ל-Assist
+      icon: mdi:chat
+      description: 'כאן ניתן לשנות את משפטי ההפעלה הקיימים או להוסיף עוד. שים טקסט
+        בין סוגריים מרובעים [ ] כדי להפוך אותו לאופציונלי. עם סוגריים עגולים ( ) ותו
+        צינור | ניתן להזין מספר ערכים שיטופלו כ-"או". `{ slot_name }` הוא ערך גמיש
+        שיכיל את המדיה המבוקשת או את שם האזור / הנגן.
+
+        ניתן גם להגדיר את התגובות ש-Assist ייתן. הוא משתמש בתבניות Jinja שיוחלפו בפרטי
+        המדיה ובשם הנגן של Music Assistant.
+
+        שים לב: ה-shuffle (ערבוב אקראי) זוהה ע"פ הופעת המילים `ערבב`, `שאפל` או `אקראי`
+        במשפט. ה-radio mode זוהה ע"פ הופעת המילה `רדיו` ב-slot `radio_mode`.'
+      collapsed: true
+      input:
+        album_trigger:
+          name: משפט הפעלה - אלבום
+          description: משפטי ההפעלה לבקשת אלבום מסוים.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י]|ערבב[י]|תערבב[י])
+            [לי] [את] (אלבום|האלבום|תקליט|התקליט|דיסק|הדיסק|אוסף|האוסף|EP) {media_name}
+            [(של|מאת) (אמן|האמן|אמנית|האמנית|זמר|הזמר|זמרת|הזמרת|להקה|הלהקה|הרכב|ההרכב)
+            {artist}] [(ב|על|אצל|דרך) [ה]{area_or_player_name}][ (במצב|עם|תוך) {radio_mode}]
+        track_trigger:
+          name: משפט הפעלה - שיר
+          description: משפטי ההפעלה לבקשת שיר מסוים.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י]|ערבב[י]|תערבב[י])
+            [לי] [את] (שיר|השיר|רצועה|הרצועה|הלחן|הסינגל|הסינגל) {media_name} [(של|מאת)
+            (אמן|האמן|אמנית|האמנית|זמר|הזמר|זמרת|הזמרת|להקה|הלהקה|הרכב|ההרכב) {artist}]
+            [(ב|על|אצל|דרך) [ה]{area_or_player_name}][ (במצב|עם|תוך) {radio_mode}]
+        artist_trigger:
+          name: משפט הפעלה - אמן
+          description: משפטי ההפעלה לבקשת מוסיקה של אמן מסוים.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י]|ערבב[י]|תערבב[י])
+            [לי] [שירים [של]] [את] (אמן|האמן|אמנית|האמנית|זמר|הזמר|זמרת|הזמרת|להקה|הלהקה|הרכב|ההרכב)
+            {media_name} [(ב|על|אצל|דרך) [ה]{area_or_player_name}][ (במצב|עם|תוך) {radio_mode}]
+        audiobook_trigger:
+          name: משפט הפעלה - ספר שמע
+          description: משפטי ההפעלה לבקשת ספר שמע.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י])
+            [לי] [את] (ספר שמע|ספר השמע|ספר מוקלט|הספר המוקלט|אודיובוק|האודיובוק|אודיו בוק)
+            {media_name} [(ב|על|אצל|דרך) [ה]{area_or_player_name}]
+        radio_trigger:
+          name: משפט הפעלה - רדיו
+          description: משפטי ההפעלה לבקשת תחנת רדיו מסוימת.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י])
+            [לי] [את] (תחנת רדיו|תחנת הרדיו|רדיו|הרדיו|תחנה|התחנה|תחנת השידור|תחנת השידור)
+            {media_name} [(ב|על|אצל|דרך) [ה]{area_or_player_name}]
+        playlist_trigger:
+          name: משפט הפעלה - פלייליסט
+          description: משפטי ההפעלה לבקשת פלייליסט מסוים.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (נגנ[י]|תנגנ[י]|השמע|השמיעי|תשמיע[י]|שימ[י]|תשימ[י]|הפעל|הפעילי|תפעיל[י]|האזנ[י]|תאזינ[י]|ערבב[י]|תערבב[י])
+            [לי] [את] (פלייליסט|הפלייליסט|רשימת השמעה|רשימת ההשמעה) {media_name} [(ב|על|אצל|דרך)
+            [ה]{area_or_player_name}][ (במצב|עם|תוך) {radio_mode}]
+        response_input:
+          name: תגובת Assist
+          description: התגובה ש-Assist ייתן לאחר ביצוע הבקשה.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ "מערבב" if (("ערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence)) else "מנגן" }} את {{ trigger.slots.media_name }} ב{{ mass_player_name }}'
+triggers:
+- trigger: conversation
+  command: !input album_trigger
+  id: album
+- trigger: conversation
+  command: !input track_trigger
+  id: track
+- trigger: conversation
+  command: !input artist_trigger
+  id: artist
+- trigger: conversation
+  command: !input audiobook_trigger
+  id: audiobook
+- trigger: conversation
+  command: !input radio_trigger
+  id: radio
+- trigger: conversation
+  command: !input playlist_trigger
+  id: playlist
+actions:
+- alias: הגדרת משתנים לשימוש באוטומציה
+  variables:
+    version: 20250404-he
+    shuffle: '{{ ("ערבב" in trigger.sentence) or ("תערבב" in trigger.sentence) or ("שאפל" in trigger.sentence) or ("אקראי" in trigger.sentence) or ("shuffle" in trigger.sentence | lower) }}'
+    default_player_entity_id: !input default_player_entity_id_input
+    trigger_id: '{{ trigger.id }}'
+    area_or_player_name_raw: '{{ trigger.slots.area_or_player_name | default("") | trim }}'
+    area_or_player_name_stripped: '{{ (area_or_player_name_raw | regex_replace("^([בלמכשו]ה?|ה)\\s*", "")) | trim if area_or_player_name_raw | length > 2 else area_or_player_name_raw }}'
+    area_or_player_name_pattern: '{{ "^(" ~ area_or_player_name_raw ~ "|" ~ area_or_player_name_stripped ~ ")$" }}'
+    area_or_player_name: '{{ area_or_player_name_stripped }}'
+    assist_device_id: '{{ trigger.device_id }}'
+    action_data:
+      media_id: '{{ trigger.slots.media_name }}'
+      media_type: '{{ "radio" if (("radio" in (trigger.slots.media_name | default("") | lower)) or ("רדיו" in (trigger.slots.media_name | default(""))) or ("תחנת" in (trigger.slots.media_name | default("")))) else trigger_id }}'
+      artist: '{{ trigger.slots.artist | default }}'
+      radio_mode: '{{ ("רדיו" in (trigger.slots.radio_mode | default("") )) or ("radio" in (trigger.slots.radio_mode | default("") | lower)) }}'
+    ma_players: '{{ integration_entities("music_assistant") | select("match", "media_player") | list }}'
+    player_entity_id_by_player_name: "{{ ma_players | expand\n  | selectattr('name',
+      'match', area_or_player_name_pattern, ignorecase=true)\n  | map(attribute='entity_id')
+      | list }}\n"
+    player_entity_id_by_area_name: '{{ areas() | map("area_name") | select("match",
+      area_or_player_name_pattern,  ignorecase=true) | map("area_entities")
+      | sum(start=[]) | select("in",  ma_players) | list }}
+
+      '
+    player_entity_id_by_assist_area: '{{ area_entities(area_id(trigger.device_id))
+      | select("in", ma_players) | list }}
+
+      '
+    mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
+      \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
+    mass_player_name: '{{ mass_player_entity_id | map("state_attr", "friendly_name")
+      | join(", ") }}'
+- alias: שליחת המדיה לנגן Music Assistant הנבחר
+  action: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr("1")) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: הפעלה/כיבוי של מצב ערבוב בנגן Music Assistant
+  action: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: שליחת התגובה חזרה ל-Assist
+  set_conversation_response: !input response_input
+mode: single
