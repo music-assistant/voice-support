@@ -186,7 +186,7 @@ blueprint:
               multiline: false
               multiple: true
           default:
-          - (Zufällig|Abspielen|Spiele|Anhören|Höre) {query}
+          - (Zufällig|Zufällige|Abspielen|Spiele|Spiel|Anhören|Höre|Hör) {query}
         combine_text:
           name: Kombinieren Sie Wort
           description: Dieses Wort wird in der Antwort verwendet, falls mehrere Bereiche
@@ -214,7 +214,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Jetzt {{ 'zufällig' if 'shuffle' in trigger.sentence | lower else 'spiele ab'}} <media_info> in <area_info>
+          default: Ich spiele {{ 'zufällig ' if (trigger.sentence | lower).startswith('zufällig ') else '' }}<media_info> im Raum <area_info>.
         player_response:
           name: Spielerantwort
           description: Assist gibt diese Antwort zurück, falls nur Music Assistant-Spieler
@@ -223,7 +223,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Jetzt {{ 'zufällig' if 'shuffle' in trigger.sentence | lower else 'spiele ab'}} <media_info> in <area_info>
+          default: Ich spiele {{ 'zufällig ' if (trigger.sentence | lower).startswith('zufällig ') else '' }}<media_info> auf <player_info>.
         area_and_player_response:
           name: Bereich und Spieler-Antwort
           description: Assist gibt diese Antwort zurück, falls sowohl Gebiete als auch
@@ -232,7 +232,7 @@ blueprint:
             text:
               multiline: false
               multiple: false
-          default: Jetzt {{ 'zufällig' if 'shuffle' in trigger.sentence | lower else 'spiele ab'}} <media_info> in <area_info> und auf <player_info>
+          default: Ich spiele {{ 'zufällig ' if (trigger.sentence | lower).startswith('zufällig ') else '' }}<media_info> im Raum <area_info> und auf <player_info>.
     prompt_settings:
       name: Prompt-Einstellung für das LLM
       icon: mdi:robot
@@ -497,9 +497,9 @@ actions:
       media_type: '{{ llm_result.action_data.media_type }}'
       artist: '{{ llm_result.action_data.artist | default(''NA'', true) }}'
       album: '{{ llm_result.action_data.album | default(''NA'', true) }}'
-      radio_mode: '{{ false if play_continuously == ''Never'' else play_continuously
-        == ''Always'' and llm_result.action_data.media_type != ''radio'' or ''NA''
-        }}'
+      radio_mode: '{{ false if play_continuously in [''Never'', ''Nie''] else play_continuously
+              in [''Always'', ''Immer''] and llm_result.action_data.media_type != ''radio'' or ''NA''
+              }}'
     llm_target_data:
       entity_id: >-
         {% set players = llm_result.get('target_data', {}).get('players', []) %}
