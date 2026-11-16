@@ -1,0 +1,718 @@
+blueprint:
+  name: Music Assistant - Local Voice Support v2
+  domain: automation
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_v2_en.yaml
+  author: TheFes
+  description: >-
+    # Play media using voice commands, fully local
+
+    Revised version of the Music Assistant local(only) voice blueprint. Assist
+    sentences are matched locally, no LLM is needed. Requested media is looked
+    up with `music_assistant.search` before playback, so Assist tells you when
+    something can't be found and uses the real title in its answer.
+
+
+    ### Usage
+
+    Sentences start with `Shuffle`, `Play` or `Listen to`, followed by the
+    media type (`album`, `track`, `artist`, `playlist`, `radio`, `audiobook`,
+    `podcast`) and the name. Optionally add `by [the] artist X` (album and track),
+    `in [the] <area, floor or player>` and `with radio mode`.
+
+
+    Extra sentences: `play my favorite songs` and `move the music to <target>`.
+
+
+    #### Examples
+
+    ```
+
+    Play the album Wasting Light by Foo Fighters in the kitchen
+
+    Shuffle the artist Muse
+
+    Play the track New Years Day in the bedroom with radio mode
+
+    Listen to the podcast Serial
+
+    Play my favorite songs downstairs
+
+    Move the music to the kitchen
+
+    ```
+
+
+    ### How the target is determined
+
+    1. An area, floor or player mentioned in the request. When the name is not
+    known, Assist says so instead of playing somewhere else.
+
+    2. Otherwise the area of the voice satellite, if it has a Music Assistant player.
+
+    3. Otherwise the default player (optional).
+
+
+    If an area has more than one Music Assistant player, only the players
+    listed under *Preferred players per area* are used (when set), otherwise all.
+
+
+    ### Fast response
+
+    Assist answers as soon as the media is found. Playback is started by a
+    second run of the same automation (through the
+    `music_assistant_local_voice_play` event), so you don't have to wait until
+    Music Assistant has started the stream. That also means Assist can't report
+    an error if the player itself fails to start.
+
+
+    ### Changes compared to the original blueprint
+
+    Names are compared literally (no regex), shuffle and radio mode detection
+    are configurable, unavailable players are skipped, floors are supported,
+    parallel requests are possible and podcasts, favorites and moving the queue
+    were added.
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    music_assistant_settings:
+      name: Music Assistant playback
+      icon: mdi:music
+      input:
+        default_player:
+          name: Default player
+          description: >-
+            Used when the request has no target and the voice satellite is not
+            in an area with a Music Assistant player. Leave empty for no default.
+          default:
+          selector:
+            entity:
+              filter:
+                - integration: music_assistant
+                  domain: media_player
+        area_players:
+          name: Preferred players per area
+          description: >-
+            When an area has several Music Assistant players (for example a voice
+            satellite and a soundbar), only the players selected here are used for
+            that area. Areas without a selected player use all their players.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: music_assistant
+                  domain: media_player
+        play_continuously:
+          name: Radio mode
+          description: >-
+            "Use player settings" follows the "Don't stop the music" setting of
+            the player. "Always" keeps adding similar songs. "Never" stops after
+            the requested media. Saying the radio mode phrase in a request always
+            turns it on for that request.
+          default: Use player settings
+          selector:
+            select:
+              options:
+                - Use player settings
+                - Always
+                - Never
+        enqueue:
+          name: Queue behaviour
+          description: >-
+            "replace" clears the current queue, "play" plays now and keeps the
+            rest of the queue, "next" / "add" add to the queue.
+          default: replace
+          selector:
+            select:
+              options:
+                - replace
+                - play
+                - next
+                - replace_next
+                - add
+        verify_media:
+          name: Check media before playing
+          description: >-
+            Look up the item with Music Assistant search before playing. Plays the
+            exact item and gives the "Not found" response when nothing matches.
+            Disable to pass the name straight to Music Assistant.
+          default: true
+          selector:
+            boolean: {}
+        library_only:
+          name: Search the library only
+          description: >-
+            Only look in your own Music Assistant library, not in all connected
+            streaming providers. Only used when media is checked before playing.
+          default: false
+          selector:
+            boolean: {}
+        max_favorites:
+          name: Number of favorite tracks
+          description: Number of random favorite tracks queued for "play my favorite songs".
+          default: 25
+          selector:
+            number:
+              min: 1
+              max: 100
+              mode: slider
+        ma_username:
+          name: Music Assistant user
+          description: >-
+            Optional Music Assistant username used for searching and playing
+            (respects the provider filters of that user). Leave empty to use the
+            default.
+          default: ""
+          selector:
+            text:
+    trigger_settings:
+      name: Trigger sentences
+      icon: mdi:microphone
+      collapsed: true
+      description: >-
+        Put text between square brackets [ ] to make it optional. With round
+        brackets ( ) and a pipe character | you can enter multiple values which
+        are treated as 'or'. `{media_name}`, `{artist}` and
+        `{area_or_player_name}` are wildcards. Translate the sentences to use the
+        blueprint in another language, and adjust the two regular expressions at
+        the bottom to match your own words.
+      input:
+        album_trigger:
+          name: Album trigger
+          default:
+            - (shuffle|play|listen to) [the ](album|ep|record|compilation|single) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|at) [the ]{area_or_player_name}][ (with|using) radio mode]
+          selector:
+            text:
+              multiple: true
+        track_trigger:
+          name: Track trigger
+          default:
+            - (shuffle|play|listen to) [the ](track|song) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|at) [the ]{area_or_player_name}][ (with|using) radio mode]
+          selector:
+            text:
+              multiple: true
+        artist_trigger:
+          name: Artist trigger
+          default:
+            - (shuffle|play|listen to) [the ](artist|band|group) {media_name} [(in|on|at) [the ]{area_or_player_name}][ (with|using) radio mode]
+          selector:
+            text:
+              multiple: true
+        playlist_trigger:
+          name: Playlist trigger
+          default:
+            - (shuffle|play|listen to) [the ]playlist {media_name} [(in|on|at) [the ]{area_or_player_name}][ (with|using) radio mode]
+          selector:
+            text:
+              multiple: true
+        radio_trigger:
+          name: Radio station trigger
+          default:
+            - (shuffle|play|listen to) [the ]((radio station)|(radio)|(station)) {media_name} [(in|on|at) [the ]{area_or_player_name}]
+          selector:
+            text:
+              multiple: true
+        audiobook_trigger:
+          name: Audiobook trigger
+          default:
+            - (play|listen to) [the ](book|audio book|audiobook) {media_name} [(in|on|at) [the ]{area_or_player_name}]
+          selector:
+            text:
+              multiple: true
+        podcast_trigger:
+          name: Podcast trigger
+          description: Plays the newest episode.
+          default:
+            - (play|listen to) [the ]podcast {media_name} [(in|on|at) [the ]{area_or_player_name}]
+          selector:
+            text:
+              multiple: true
+        favorites_trigger:
+          name: Favorites trigger
+          description: Plays random favorite tracks.
+          default:
+            - (shuffle|play|listen to) [my ]favorite (songs|tracks|music) [(in|on|at) [the ]{area_or_player_name}]
+          selector:
+            text:
+              multiple: true
+        transfer_trigger:
+          name: Move music trigger
+          description: Moves the queue of the player that is playing to the target.
+          default:
+            - (move|transfer|send) [the ]music to [the ]{area_or_player_name}
+          selector:
+            text:
+              multiple: true
+        shuffle_regex:
+          name: Shuffle expression
+          description: >-
+            Regular expression (case insensitive) that is checked against the
+            spoken sentence to decide if shuffle should be enabled. Leave empty to
+            never enable shuffle.
+          default: '^\s*shuffle\b'
+          selector:
+            text:
+        radio_mode_regex:
+          name: Radio mode expression
+          description: >-
+            Regular expression (case insensitive) for the radio mode phrase at the
+            end of a sentence. It enables radio mode and is removed from the
+            target name. Must match the phrase used in the trigger sentences.
+          default: '\s*(with|using) radio mode\s*$'
+          selector:
+            text:
+        artist_split:
+          name: Artist separator word
+          description: >-
+            The {media_name} wildcard usually swallows "by <artist>", so the artist
+            is not recognised separately. For album and track requests the text
+            after the last occurrence of this word is used as the artist. When
+            nothing is found that way, the full text is searched instead. Leave
+            empty to disable.
+          default: by
+          selector:
+            text:
+    response_settings:
+      name: Responses
+      icon: mdi:chat
+      collapsed: true
+      description: >-
+        <media_info> is replaced with the title of the found item,
+        <area_info> and <player_info> with the area/floor names and player names
+        and <target_name> with the target as it was spoken. `shuffle` is
+        available as a variable. Translate these to use the blueprint in another
+        language.
+      input:
+        combine_text:
+          name: Combine word
+          default: and
+          selector:
+            text:
+        artist_text:
+          name: Artist word
+          description: >-
+            When one album or track is found, <media_info> becomes its title
+            followed by this word and the artist, for example "Wasting Light by
+            Foo Fighters". Leave empty to only use the title.
+          default: by
+          selector:
+            text:
+        favorites_text:
+          name: Favorites text
+          description: Used for <media_info> when favorite tracks are played.
+          default: your favorite songs
+          selector:
+            text:
+        area_response:
+          name: Area response
+          default: "Now {{ 'shuffling' if shuffle else 'playing' }} <media_info> in <area_info>"
+          selector:
+            text:
+        player_response:
+          name: Player response
+          default: "Now {{ 'shuffling' if shuffle else 'playing' }} <media_info> on <player_info>"
+          selector:
+            text:
+        area_and_player_response:
+          name: Area and player response
+          default: "Now {{ 'shuffling' if shuffle else 'playing' }} <media_info> in <area_info> and on <player_info>"
+          selector:
+            text:
+        no_target_response:
+          name: No target response
+          default: I couldn't find a Music Assistant player to play this on
+          selector:
+            text:
+        unknown_target_response:
+          name: Unknown target response
+          default: I don't know an area, floor or player named <target_name>
+          selector:
+            text:
+        not_found_response:
+          name: Not found response
+          default: Sorry, I couldn't find <media_info>
+          selector:
+            text:
+        nothing_playing_response:
+          name: Nothing playing response
+          description: Used when asked to move the music while nothing is playing.
+          default: There is no music playing that I can move
+          selector:
+            text:
+        transfer_response:
+          name: Move music response
+          default: Moved the music to <area_info> <player_info>
+          selector:
+            text:
+
+mode: parallel
+max: 10
+
+triggers:
+  - alias: Album request
+    id: album
+    trigger: conversation
+    command: !input album_trigger
+  - alias: Track request
+    id: track
+    trigger: conversation
+    command: !input track_trigger
+  - alias: Artist request
+    id: artist
+    trigger: conversation
+    command: !input artist_trigger
+  - alias: Playlist request
+    id: playlist
+    trigger: conversation
+    command: !input playlist_trigger
+  - alias: Radio station request
+    id: radio
+    trigger: conversation
+    command: !input radio_trigger
+  - alias: Audiobook request
+    id: audiobook
+    trigger: conversation
+    command: !input audiobook_trigger
+  - alias: Podcast request
+    id: podcast
+    trigger: conversation
+    command: !input podcast_trigger
+  - alias: Favorites request
+    id: favorites
+    trigger: conversation
+    command: !input favorites_trigger
+  - alias: Move music request
+    id: transfer
+    trigger: conversation
+    command: !input transfer_trigger
+  - alias: Playback request fired by this automation
+    id: play
+    trigger: event
+    event_type: music_assistant_local_voice_play
+
+actions:
+  - alias: Start playback (second run, so Assist doesn't wait for it)
+    if:
+      - condition: trigger
+        id: play
+    then:
+      - alias: Only handle events fired by this automation
+        condition: template
+        value_template: "{{ trigger.event.data.get('automation') == this.entity_id }}"
+      - alias: Play the media
+        action: music_assistant.play_media
+        continue_on_error: true
+        target:
+          entity_id: "{{ trigger.event.data.target_players }}"
+        data: "{{ trigger.event.data.play_data }}"
+      - alias: Set shuffle on the target players
+        action: media_player.shuffle_set
+        continue_on_error: true
+        target:
+          entity_id: "{{ trigger.event.data.target_players }}"
+        data:
+          shuffle: "{{ trigger.event.data.shuffle }}"
+      - stop: Playback started
+
+  - alias: Collect settings, players, areas and floors
+    variables:
+      version: 2026111401
+      default_player: !input default_player
+      area_players: !input area_players
+      play_continuously: !input play_continuously
+      enqueue: !input enqueue
+      verify_media: !input verify_media
+      library_only: !input library_only
+      max_favorites: !input max_favorites
+      ma_username: !input ma_username
+      combine: !input combine_text
+      artist_text: !input artist_text
+      favorites_text: !input favorites_text
+      shuffle_regex: !input shuffle_regex
+      radio_mode_regex: !input radio_mode_regex
+      artist_split: !input artist_split
+      ma_players: >-
+        {{ integration_entities('music_assistant')
+           | select('match', 'media_player')
+           | reject('is_state', 'unavailable') | list }}
+      ma_config_entry: "{{ config_entry_id(ma_players | first) if ma_players else none }}"
+      area_ids: "{{ ma_players | map('area_id') | reject('none') | unique | list }}"
+      trigger_id: "{{ trigger.id }}"
+      media_type: "{{ 'track' if trigger_id == 'favorites' else trigger_id }}"
+      sentence: "{{ trigger.sentence | lower }}"
+      media_name: "{{ trigger.slots.media_name | default('') | trim }}"
+      artist_name: "{{ trigger.slots.artist | default('') | trim }}"
+      split_sep: "{{ ' ' ~ (artist_split | trim | lower) ~ ' ' if artist_split | trim else '' }}"
+      split_at: >-
+        {{ media_name.lower().rfind(split_sep)
+           if split_sep and not artist_name and media_type in ['track', 'album'] else -1 }}
+      split_used: "{{ split_at | int > 0 }}"
+      search_name: "{{ media_name[:split_at | int] | trim if split_used else media_name }}"
+      search_artist: >-
+        {{ media_name[(split_at | int + split_sep | length):] | trim if split_used else artist_name }}
+      shuffle: "{{ shuffle_regex != '' and sentence | regex_search(shuffle_regex, ignorecase=true) }}"
+      radio_requested: "{{ radio_mode_regex != '' and sentence | regex_search(radio_mode_regex, ignorecase=true) }}"
+      target_name: >-
+        {% set n = trigger.slots.area_or_player_name | default('') %}
+        {{ (n | regex_replace(radio_mode_regex, '', ignorecase=true) if radio_mode_regex else n) | trim }}
+      named_players: >-
+        {% set ns = namespace(p=[]) %}
+        {% for e in ma_players if target_name and state_attr(e, 'friendly_name') | lower == target_name | lower %}
+          {% set ns.p = ns.p + [e] %}
+        {% endfor %}
+        {{ ns.p }}
+      named_areas: >-
+        {% set ns = namespace(a=[]) %}
+        {% for a in areas() if target_name and area_name(a) | lower == target_name | lower %}
+          {% set ns.a = ns.a + [a] %}
+        {% endfor %}
+        {{ ns.a }}
+      named_floors: >-
+        {% set ns = namespace(f=[]) %}
+        {% for f in floors() if target_name and floor_name(f) | lower == target_name | lower %}
+          {% set ns.f = ns.f + [f] %}
+        {% endfor %}
+        {{ ns.f }}
+      named: "{{ (named_players + named_areas + named_floors) | count > 0 }}"
+
+  - alias: Stop when the spoken target is unknown
+    if:
+      - condition: template
+        value_template: "{{ target_name != '' and not named }}"
+    then:
+      - variables:
+          unknown_response: !input unknown_target_response
+      - set_conversation_response: "{{ unknown_response | replace('<target_name>', target_name) }}"
+      - stop: Unknown target
+
+  - alias: Determine target players
+    variables:
+      satellite_area: >-
+        {% set a = area_id(trigger.device_id) if trigger.device_id else none %}
+        {{ a if a in area_ids else '' }}
+      target_areas: >-
+        {% if named %}
+          {% set ns = namespace(a=named_areas) %}
+          {% for f in named_floors %}
+            {% set ns.a = ns.a + floor_areas(f) %}
+          {% endfor %}
+          {{ ns.a | select('in', area_ids) | unique | list }}
+        {% else %}
+          {{ [satellite_area] if satellite_area else [] }}
+        {% endif %}
+      area_target_players: >-
+        {% set ns = namespace(p=[]) %}
+        {% for a in target_areas %}
+          {% set in_area = ma_players | select('in', area_entities(a)) | list %}
+          {% set preferred = in_area | select('in', area_players) | list %}
+          {% set ns.p = ns.p + (preferred or in_area) %}
+        {% endfor %}
+        {{ ns.p | unique | list }}
+      target_players: >-
+        {% if named %}
+          {{ (named_players + area_target_players) | unique | list }}
+        {% else %}
+          {{ area_target_players or ([default_player] if default_player else []) }}
+        {% endif %}
+      area_list: "{{ target_areas | map('area_name') | list }}"
+      player_list: >-
+        {% if named %}
+          {{ named_players | map('state_attr', 'friendly_name') | list }}
+        {% elif target_areas or not default_player %}
+          {{ [] }}
+        {% else %}
+          {{ [state_attr(default_player, 'friendly_name') or default_player] }}
+        {% endif %}
+      area_info: >-
+        {{ area_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ area_list[-1]
+           if area_list | count > 2 else area_list | join(' ' ~ combine ~ ' ') }}
+      player_info: >-
+        {{ player_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ player_list[-1]
+           if player_list | count > 2 else player_list | join(' ' ~ combine ~ ' ') }}
+      media_info: "{{ favorites_text if trigger_id == 'favorites' else media_name }}"
+      result_key: >-
+        {{ {'artist': 'artists', 'album': 'albums', 'track': 'tracks', 'playlist': 'playlists',
+            'radio': 'radio', 'audiobook': 'audiobooks', 'podcast': 'podcasts'}.get(media_type, 'tracks') }}
+      found_uris: []
+      found_items: []
+
+  - alias: Stop when no target could be determined
+    if:
+      - condition: template
+        value_template: "{{ target_players | count == 0 }}"
+    then:
+      - variables:
+          no_target: !input no_target_response
+      - set_conversation_response: "{{ no_target | replace('<area_info>', area_info) }}"
+      - stop: No target
+
+  - alias: Move the music to the target
+    if:
+      - condition: template
+        value_template: "{{ trigger_id == 'transfer' }}"
+    then:
+      - variables:
+          source_players: >-
+            {{ ma_players | select('is_state', ['playing', 'paused'])
+               | reject('in', target_players) | list }}
+          transfer_text: !input transfer_response
+          nothing_text: !input nothing_playing_response
+      - if:
+          - condition: template
+            value_template: "{{ source_players | count == 0 }}"
+        then:
+          - set_conversation_response: "{{ nothing_text }}"
+          - stop: Nothing to move
+      - action: music_assistant.transfer_queue
+        continue_on_error: true
+        target:
+          entity_id: "{{ target_players }}"
+        data:
+          source_player: "{{ source_players | first }}"
+          auto_play: true
+      - set_conversation_response: >-
+          {{ transfer_text | replace('<area_info>', area_info)
+             | replace('<player_info>', player_info) | trim }}
+      - stop: Music moved
+
+  - alias: Get random favorite tracks
+    if:
+      - condition: template
+        value_template: "{{ trigger_id == 'favorites' }}"
+    then:
+      - action: music_assistant.get_library
+        continue_on_error: true
+        data: >-
+          {% set d = {
+            'config_entry_id': ma_config_entry,
+            'media_type': 'track',
+            'favorite': true,
+            'order_by': 'random',
+            'limit': max_favorites | int,
+            'username': ma_username
+          } %}
+          {{ dict(d.items() | selectattr('1', 'ne', '')) }}
+        response_variable: library_result
+      - variables:
+          found_uris: >-
+            {{ (library_result.get('items', []) if library_result is defined else [])
+               | map(attribute='uri') | list }}
+    else:
+      - alias: Look up the media in Music Assistant
+        if:
+          - condition: template
+            value_template: "{{ verify_media }}"
+        then:
+          - action: music_assistant.search
+            continue_on_error: true
+            data: >-
+              {% set d = {
+                'config_entry_id': ma_config_entry,
+                'name': search_name,
+                'media_type': [media_type],
+                'artist': search_artist if media_type in ['track', 'album'] else '',
+                'limit': 5 if search_artist and media_type in ['track', 'album'] else 1,
+                'username': ma_username
+              } %}
+              {% set d = dict(d, library_only=true) if library_only else d %}
+              {{ dict(d.items() | selectattr('1', 'ne', '')) }}
+            response_variable: search_result
+          - variables:
+              best_match: >-
+                {% set r = search_result.get(result_key, []) if search_result is defined else [] %}
+                {% set ns = namespace(i=none) %}
+                {% if search_artist and media_type in ['track', 'album'] %}
+                  {% for x in r %}
+                    {% for a in x.get('artists') or [] %}
+                      {% if ns.i is none and (search_artist | lower in a.name | lower or a.name | lower in search_artist | lower) %}
+                        {% set ns.i = x %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                {% endif %}
+                {{ ns.i or (none if split_used else (r | first if r else none)) }}
+          - alias: Search the full text when the split did not give a match
+            if:
+              - condition: template
+                value_template: "{{ split_used and best_match is none }}"
+            then:
+              - action: music_assistant.search
+                continue_on_error: true
+                data: >-
+                  {% set d = {
+                    'config_entry_id': ma_config_entry,
+                    'name': media_name,
+                    'media_type': [media_type],
+                    'limit': 1,
+                    'username': ma_username
+                  } %}
+                  {% set d = dict(d, library_only=true) if library_only else d %}
+                  {{ dict(d.items() | selectattr('1', 'ne', '')) }}
+                response_variable: search_result
+              - variables:
+                  best_match: >-
+                    {% set r = search_result.get(result_key, []) if search_result is defined else [] %}
+                    {{ r | first if r else none }}
+          - variables:
+              found_uris: "{{ [best_match.uri] if best_match else [] }}"
+              found_items: >-
+                {{ [{'name': best_match.name, 'artist': ((best_match.get('artists') or [{}]) | first).get('name', '')}] if best_match else [] }}
+
+  - alias: Stop when nothing was found
+    if:
+      - condition: template
+        value_template: >-
+          {{ (trigger_id == 'favorites' or verify_media) and found_uris | count == 0 }}
+    then:
+      - variables:
+          not_found: !input not_found_response
+      - set_conversation_response: "{{ not_found | replace('<media_info>', media_info) }}"
+      - stop: Media not found
+
+  - alias: Use the title of the found item in the response
+    if:
+      - condition: template
+        value_template: "{{ found_items | count == 1 }}"
+    then:
+      - variables:
+          media_info: >-
+            {% set i = found_items | first %}
+            {{ i.name ~ (' ' ~ artist_text ~ ' ' ~ i.artist
+               if artist_text and i.artist and media_type in ['album', 'track'] else '') }}
+
+  - alias: Hand playback over to a second run
+    variables:
+      checked: "{{ trigger_id == 'favorites' or verify_media }}"
+      play_data: >-
+        {% set music = media_type in ['artist', 'album', 'track', 'playlist'] %}
+        {% set d = {
+          'media_id': found_uris if checked else [search_name],
+          'media_type': media_type,
+          'artist': 'NA' if checked or media_type not in ['track', 'album'] else search_artist or 'NA',
+          'enqueue': enqueue,
+          'radio_mode': true if radio_requested and music
+                        else 'NA' if play_continuously == 'Use player settings' or not music
+                        else play_continuously == 'Always',
+          'start_item': 'latest' if media_type == 'podcast' else 'NA',
+          'username': ma_username or 'NA'
+        } %}
+        {{ dict(d.items() | rejectattr('1', 'eq', 'NA')) }}
+  - event: music_assistant_local_voice_play
+    event_data:
+      automation: "{{ this.entity_id }}"
+      target_players: "{{ target_players }}"
+      play_data: "{{ play_data }}"
+      shuffle: "{{ shuffle }}"
+
+  - alias: Set response for Assist
+    variables:
+      responses:
+        only_area: !input area_response
+        only_player: !input player_response
+        area_player: !input area_and_player_response
+      response: >-
+        {{ 'area_player' if area_list and player_list
+           else 'only_area' if area_list else 'only_player' }}
+  - set_conversation_response: >-
+      {{ responses[response] | replace('<media_info>', media_info)
+         | replace('<area_info>', area_info) | replace('<player_info>', player_info) }}

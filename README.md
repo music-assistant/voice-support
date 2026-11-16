@@ -87,6 +87,61 @@ Shuffle songs by Muse.
 Shuffle the album Classical Nights on the Bedroom Sonos Speaker
 ```
 
+### Option 1 - version 2 (English)
+
+Version 2 is a rewrite of the local blueprint. It is added next to the original blueprints (which keep working, in all languages), because the inputs changed too much to update the original in place. For now version 2 is only available in English. To use it in another language, translate the trigger sentences and responses in the blueprint settings and adjust the two regular expressions.
+
+The blueprint is located in the `local-assist-blueprint` folder of this repository and can be imported by using the following button:
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Flocal-assist-blueprint%2Fmass_assist_blueprint_v2_en.yaml)
+
+#### What is different compared to version 1
+
+|Topic|Version 1|Version 2|
+|---|---|---|
+|Media check|The spoken name is passed to Music Assistant as it is|The item is looked up with `music_assistant.search` first (optionally in the library only). Assist answers with the real title and artist, and uses the `Not found response` when nothing matches|
+|Unknown area or player|Falls back to the area of the satellite or the default player, so music can start in another room than you asked for|Assist says it doesn't know the area, floor or player (`Unknown target response`)|
+|Target names|Matched as a regular expression, so a name with special characters (like `(` or `+`) can fail|Names are compared literally, case insensitive|
+|Floors|Not supported|"Play ... downstairs" works with floors|
+|Several players in an area|All players in the area are used|Optionally only the players selected in `Preferred players per area`. Unavailable players are skipped|
+|Response speed|Assist waits until playback has started|Assist answers as soon as the media is found, playback is started by a second run of the automation. Assist can't report an error when the player itself fails to start|
+|Parallel requests|`mode: single`|`mode: parallel`|
+|Shuffle and radio mode|Fixed: the sentence has to start with `shuffle`, radio mode is a slot|Two configurable regular expressions (`Shuffle expression`, `Radio mode expression`), so they can be translated|
+|Album and track by artist|The `{artist}` slot|Same, with an `Artist separator word` as fallback when the wildcard swallows "by <artist>"|
+|Queue|Always replaces the queue|`Queue behaviour` setting|
+|Media types|Album, track, artist, playlist, radio, audiobook|Also podcasts (plays the newest episode)|
+|New sentences|-|"Play my favorite songs" (random favorite tracks, `Number of favorite tracks`) and "Move the music to the kitchen" (moves the queue of the player that is playing)|
+|Responses|One response for everything|Separate responses for area, player, area and player, no target, unknown target, not found, nothing playing and moved music. `<media_info>`, `<area_info>`, `<player_info>` and `<target_name>` are available|
+|Music Assistant user|-|Optional `Music Assistant user` for searching and playing|
+
+#### Removed and renamed inputs
+
+|Version 1|Version 2|
+|---|---|
+|`default_player_entity_id_input`|`default_player` (now optional)|
+|`response_input`|`area_response`, `player_response`, `area_and_player_response` and the other responses in `response_settings`|
+|`album_trigger`, `track_trigger`, `artist_trigger`, `audiobook_trigger`, `radio_trigger`, `playlist_trigger`|Same names, in `trigger_settings`. The `{radio_mode}` slot is replaced by the optional phrase `with radio mode` which is detected with `Radio mode expression`. The words `in`, `on` and `at` can be used to name the target. Because the sentences changed a bit, copy your translated sentences from version 1 and adjust them|
+|-|New: `area_players`, `enqueue`, `verify_media`, `library_only`, `max_favorites`, `ma_username`, `podcast_trigger`, `favorites_trigger`, `transfer_trigger`, `shuffle_regex`, `radio_mode_regex`, `artist_split`, `artist_text`, `favorites_text`, `combine_text` and the new responses|
+
+#### Switching from version 1
+
+Create a new automation from the version 2 blueprint, set the default player if you want one, and disable (or delete) the automation based on version 1. Both would react to the same sentences.
+
+#### Usage
+
+Sentences start with `Shuffle`, `Play` or `Listen to`, followed by the media type (`album`, `track`, `artist`, `playlist`, `radio`, `audiobook`, `podcast`) and the name. Optionally add `by [the] artist X` (album and track), `in [the] <area, floor or player>` and `with radio mode`. The extra sentences are `play my favorite songs` and `move the music to <target>`.
+
+The target is determined in the same way as in option 2: an area, floor or player in the request, otherwise the area of the voice satellite, otherwise the default player.
+
+```
+Play the album Wasting Light by Foo Fighters in the kitchen
+Shuffle the artist Muse
+Play the track New Years Day in the bedroom with radio mode
+Listen to the podcast Serial
+Play my favorite songs downstairs
+Move the music to the kitchen
+```
+
 ## Option 2 Local Assist enhanced by an LLM integration like [Open AI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) (ChatGPT) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) (Gemini).
 
 The groundwork for this option was done by [JLo](<https://github.com/jlpouffier>) in his [blog post](<https://blog.jlpouffier.fr/chatgpt-powered-music-search-engine-on-a-local-voice-assistant/>) on GPT-powered music search. This blog post was a big inspiration for the LLM enhanced automation, and also enabled the full LLM script. So big thanks to JLo!
