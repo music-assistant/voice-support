@@ -248,6 +248,17 @@ The blueprint is located in the `llm-script-blueprint` folder of this repository
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Fllm-script-blueprint%2Fllm_voice_script_v2.yaml)
 
+### When to use this instead of the built-in Search and Play intent
+
+Since Home Assistant 2025.6 the built-in `Search and Play` intent works with Music Assistant without any blueprint or LLM, see the [Music Assistant voice documentation](https://music-assistant.io/integration/voice/). For requests like "play Rumours in the kitchen" it is enough. Use this blueprint when you need something the built-in intent can't express:
+
+* Artist (and album) qualifiers, like "the album Rumours by Fleetwood Mac", and "the latest album by ..."
+* Shuffle, radio mode and queue actions (play next, add to the queue, replace the queue)
+* Checking the result against what was asked, and telling the user when nothing matching was found, instead of playing the first match
+* Moving the music that is playing to another player or area
+
+If both this blueprint and the built-in intent are available, the LLM can choose either of them. Keep to one way of working per voice assistant, and make the description of the script clear about when it should be used.
+
 ### Requirements
 
 * Home Assistant 2025.8 or newer
