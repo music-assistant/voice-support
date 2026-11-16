@@ -1,0 +1,628 @@
+blueprint:
+  name: Music Assistant - LLM Script (AI Task)
+  domain: script
+  source_url: https://github.com/music-assistant/voice-support/blob/main/llm-script-blueprint/llm_voice_script_v2.yaml
+  author: TheFes
+  description: >-
+    # LLM tool script to play music with Music Assistant
+
+    Creates a script that an LLM conversation agent can call as a tool when you
+    ask for music. The script has **one field, `query`**. The request is
+    interpreted by `ai_task.generate_data` with structured output, so only
+    valid media types, areas, floors and Music Assistant players can come back.
+    The requested media is checked with `music_assistant.search` before
+    playback, and the script returns a clear result to the LLM (found, not
+    found, no target), so it can tell you what happened instead of guessing.
+
+
+    * **Make sure to expose the script to Assist after creating it.**
+
+    * **Give the script a clear description.** An example is below.
+
+
+    ### Example for the script description
+
+    `Play music with Music Assistant. Use this tool whenever the user asks to
+    play, shuffle or listen to music, an artist, an album, a song, a playlist or a
+    radio station. Pass the complete request in the query field, in the
+    words of the user, and add where to play it (the area the request comes from)
+    when the user does not mention a location.`
+
+
+    ### How the target is determined
+
+    1. Areas, floors and/or players mentioned in the query.
+
+    2. Otherwise the default player.
+
+    If an area has more than one Music Assistant player, only the players listed
+    under *Preferred players per area* are used for that area (when set).
+
+
+    ### Playback starts in a second run
+
+    Starting playback can take a while on some players, and the LLM would have to
+    wait for it. So the script hands the playback over to a second run of itself
+    and returns right away.
+
+
+    ### Variables available in the additional actions
+
+    |Variable|Description|
+    |---|---|
+    |`query`|The query as passed to the script|
+    |`media_type`|`artist`, `album`, `track`, `playlist`, `radio`, `audiobook` or `podcast`|
+    |`media_ids`|List with the requested titles (`media_id` has the same titles joined by `;`)|
+    |`artist` / `album`|Artist or album from the request, empty when not relevant|
+    |`media_description`|Short description of the requested media|
+    |`found_items`|List of `{name, artist}` for the items found in Music Assistant|
+    |`area`|List of area ids the request is played in (empty when only players or the default player are used)|
+    |`media_player`|List of players explicitly named in the request|
+    |`target_players`|All players the request is played on|
+    |`shuffle`|True when shuffle was requested|
+    |`enqueue`|The queue behaviour used: `replace`, `play`, `next` or `add`|
+    |`latest_release`|True when the newest album of the artist was requested|
+    |`default_player`|The default player set in the blueprint, if any|
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    ai_settings:
+      name: AI settings
+      icon: mdi:robot
+      input:
+        ai_task_entity:
+          name: AI Task entity
+          description: >-
+            The AI Task entity used to interpret the query. Leave empty to use the
+            preferred AI Task entity set in Home Assistant. A small and fast model
+            is enough for this.
+          default:
+          selector:
+            entity:
+              filter:
+                - domain: ai_task
+        max_tracks:
+          name: Maximum number of tracks
+          description: >-
+            Maximum number of tracks the AI may suggest for open requests like a
+            genre or mood. Each track is looked up separately, so a higher number
+            makes the script slower.
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 25
+              mode: slider
+        llm_instructions:
+          name: Instructions for the AI
+          description: >-
+            Instructions sent to the AI Task. The output format is enforced by
+            the structure, so this only needs to explain how to interpret the
+            query. You can use `{{ query }}` and `{{ max_tracks }}`.
+          default: >-
+            You interpret a music request for a music player. The request is:
+            "{{ query }}"
+
+
+            Today is {{ now().strftime('%Y-%m-%d') }}. Your knowledge ends before
+            this date, so artists may have released music you don't know about.
+            Never leave media_id empty because you are unsure about something recent.
+
+
+            Fill in the fields as follows:
+
+            - media_type: artist, album, track, playlist, radio, audiobook or
+            podcast. If the request is not about one specific item (for example a
+            genre, mood, era or "music like X"), use track and list up to
+            {{ max_tracks }} fitting songs.
+
+            - media_id: the exact title(s) of the item(s). Always fill this in, also
+            when the request is vague. Use your own knowledge to turn descriptions
+            ("the album with the baby in the water on the cover") into real titles.
+            For a list of tracks by different artists use the format
+            "Artist - Title". Keep titles in their original language.
+
+            - latest_release: true when the user asks for the latest, newest or most
+            recent album of an artist ("the latest album by Foo Fighters"). Then use
+            media_type album, fill in artist, and use for media_id the title you
+            believe is the latest. That title is only a fallback: the newest album
+            is looked up in the music library separately, so don't worry that your
+            knowledge may be out of date.
+
+            - artist / album: only when it narrows the search down. Never for
+            playlists, radio or podcasts.
+
+            - media_description: a short description of the requested media in the
+            language of the request, without the location.
+
+            - areas / floors / players: only when the request explicitly says where
+            to play. When a room is named, use areas, not the players in that room.
+            Leave them empty when no location is mentioned.
+
+            - shuffle: true only when the user asks to shuffle or play in random
+            order.
+
+            - radio_mode: true only when the user asks for radio mode, endless
+            playback or "more like this".
+
+            - queue_action: leave empty unless the user explicitly says what to do
+            with the current queue. Use add to add the media to the end of the queue
+            ("add to the queue", "voeg toe aan de wachtrij"), next to play it after
+            the current song ("play next", "speel hierna"), play to play it right
+            away and keep the rest of the queue, replace to start a new queue.
+          selector:
+            text:
+              multiline: true
+    music_assistant_settings:
+      name: Music Assistant playback
+      icon: mdi:music
+      input:
+        default_player:
+          name: Default player
+          description: >-
+            Used when the query has no location. Leave empty for no default; the
+            script then reports that it has no target.
+          default:
+          selector:
+            entity:
+              filter:
+                - integration: music_assistant
+                  domain: media_player
+        area_players:
+          name: Preferred players per area
+          description: >-
+            When an area has several Music Assistant players (for example a voice
+            satellite and a soundbar), only the players selected here are used for
+            that area. Areas without a selected player use all their players.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: music_assistant
+                  domain: media_player
+        play_continuously:
+          name: Radio mode
+          description: >-
+            "Use player settings" follows the "Don't stop the music" setting of
+            the player. "Always" keeps adding similar songs. "Never" stops after
+            the requested media. A request for radio mode always enables it.
+          default: Use player settings
+          selector:
+            select:
+              options:
+                - Use player settings
+                - Always
+                - Never
+        enqueue:
+          name: Queue behaviour
+          description: >-
+            The default when the user doesn't say what to do with the queue.
+            "replace" clears the current queue, "play" plays now and keeps the
+            rest of the queue, "next" plays after the current song, "add" adds to
+            the end. The user can override this in the request ("add to the
+            queue", "play next").
+          default: replace
+          selector:
+            select:
+              options:
+                - replace
+                - play
+                - next
+                - replace_next
+                - add
+        verify_media:
+          name: Check media before playing
+          description: >-
+            Look up each item with Music Assistant search before playing. Plays
+            exact library/provider items and returns a "not found" result to the
+            LLM when nothing matches. Disable to pass the names straight to Music
+            Assistant.
+          default: true
+          selector:
+            boolean: {}
+    tool_settings:
+      name: Tool settings
+      icon: mdi:tools
+      collapsed: true
+      input:
+        query_prompt:
+          name: Description of the query field
+          description: This is what the LLM sees as description of the `query` field.
+          default: >-
+            The complete music request of the user, in the words of the user, for
+            example "shuffle Foo Fighters in the kitchen". Always include the
+            location when the user mentions one. When the user does not mention a
+            location, add the area the request comes from.
+          selector:
+            text:
+              multiline: true
+    addition_conditions_actions:
+      name: Additional actions
+      icon: mdi:wrench
+      description: >-
+        Actions performed after playback has been handed over. See the blueprint
+        description for the available variables.
+      collapsed: true
+      input:
+        actions:
+          name: Additional actions
+          default: []
+          selector:
+            action: {}
+
+mode: parallel
+max: 10
+max_exceeded: silent
+icon: mdi:music
+description: >-
+  Play music with Music Assistant. Pass the complete request, including the
+  location, in the query field.
+
+fields:
+  query:
+    name: Query
+    description: !input query_prompt
+    required: true
+    example: Shuffle Foo Fighters in the kitchen
+    selector:
+      text:
+
+sequence:
+  - alias: Start playback (second run, so the LLM doesn't wait for it)
+    if:
+      - condition: template
+        value_template: "{{ ma_play is defined }}"
+    then:
+      - alias: Play the media
+        action: music_assistant.play_media
+        continue_on_error: true
+        target:
+          entity_id: "{{ ma_play.target_players }}"
+        data: "{{ ma_play.play_data }}"
+      - alias: Set shuffle on the target players (not when adding to an existing queue)
+        if:
+          - condition: template
+            value_template: "{{ ma_play.get('set_shuffle', true) }}"
+        then:
+          - action: media_player.shuffle_set
+            continue_on_error: true
+            target:
+              entity_id: "{{ ma_play.target_players }}"
+            data:
+              shuffle: "{{ ma_play.shuffle }}"
+      - stop: Playback started
+
+  - alias: Collect Music Assistant players, areas and floors
+    variables:
+      version: 2026111501
+      query: "{{ query | default('', true) | string | trim }}"
+      ai_task_entity: !input ai_task_entity
+      max_tracks: !input max_tracks
+      area_players: !input area_players
+      default_player: !input default_player
+      play_continuously: !input play_continuously
+      enqueue: !input enqueue
+      verify_media: !input verify_media
+      ma_players: >-
+        {{ integration_entities('music_assistant')
+           | select('match', 'media_player')
+           | reject('is_state', 'unavailable') | list }}
+      ma_config_entry: "{{ config_entry_id(ma_players | first) if ma_players else none }}"
+      area_ids: "{{ ma_players | map('area_id') | reject('none') | unique | list }}"
+      floor_ids: >-
+        {% set ns = namespace(f=[]) %}
+        {% for f in floors() if floor_areas(f) | select('in', area_ids) | list %}
+          {% set ns.f = ns.f + [f] %}
+        {% endfor %}
+        {{ ns.f }}
+      player_options: >-
+        {% set ns = namespace(o=[]) %}
+        {% for e in ma_players %}
+          {% set a = area_name(e) %}
+          {% set ns.o = ns.o + [{'value': e, 'label': state_attr(e, 'friendly_name') ~ (' (' ~ a ~ ')' if a else '')}] %}
+        {% endfor %}
+        {{ ns.o }}
+      area_options: >-
+        {% set ns = namespace(o=[]) %}
+        {% for a in area_ids %}
+          {% set ns.o = ns.o + [{'value': a, 'label': area_name(a)}] %}
+        {% endfor %}
+        {{ ns.o }}
+      floor_options: >-
+        {% set ns = namespace(o=[]) %}
+        {% for f in floor_ids %}
+          {% set ns.o = ns.o + [{'value': f, 'label': floor_name(f)}] %}
+        {% endfor %}
+        {{ ns.o }}
+      structure: >-
+        {% set s = {
+          'media_type': {'description': 'Type of media requested', 'required': true,
+            'selector': {'select': {'options': ['artist', 'album', 'track', 'playlist', 'radio', 'audiobook', 'podcast']}}},
+          'media_id': {'description': 'Exact title(s) of the item(s) to play', 'required': true,
+            'selector': {'text': {'multiple': true}}},
+          'artist': {'description': 'Artist name, only when it narrows the search', 'selector': {'text': {}}},
+          'album': {'description': 'Album name, only when it narrows the search', 'selector': {'text': {}}},
+          'media_description': {'description': 'Short description of the requested media, without the location',
+            'selector': {'text': {}}},
+          'shuffle': {'description': 'True when the user asks to shuffle', 'selector': {'boolean': {}}},
+          'radio_mode': {'description': 'True when the user asks for radio mode or endless playback',
+            'selector': {'boolean': {}}},
+          'latest_release': {'description': 'True when the user asks for the latest, newest or most recent album of an artist',
+            'selector': {'boolean': {}}},
+          'queue_action': {'description': 'Only when the user explicitly says what to do with the queue: add to the end, play next, play now and keep the queue, or start a new queue',
+            'selector': {'select': {'options': ['add', 'next', 'play', 'replace']}}}
+        } %}
+        {% set t = {} %}
+        {% if area_options %}
+          {% set t = dict(t, areas={'description': 'Areas the user explicitly mentioned', 'selector': {'select': {'multiple': true, 'options': area_options}}}) %}
+        {% endif %}
+        {% if floor_options %}
+          {% set t = dict(t, floors={'description': 'Floors the user explicitly mentioned', 'selector': {'select': {'multiple': true, 'options': floor_options}}}) %}
+        {% endif %}
+        {% if player_options %}
+          {% set t = dict(t, players={'description': 'Players the user explicitly mentioned by name', 'selector': {'select': {'multiple': true, 'options': player_options}}}) %}
+        {% endif %}
+        {{ dict(s, **t) }}
+      llm_instructions: !input llm_instructions
+
+  - alias: Stop when there is no query or no player
+    if:
+      - condition: template
+        value_template: "{{ not query or not ma_players }}"
+    then:
+      - variables:
+          tool_response:
+            success: false
+            error: "{{ 'No query was provided, ask the user what to play' if not query else 'No Music Assistant players are available' }}"
+      - stop: No query or no players
+        response_variable: tool_response
+
+  - alias: Ask the AI Task to interpret the query
+    action: ai_task.generate_data
+    continue_on_error: true
+    data: >-
+      {% set d = {'task_name': 'Music Assistant voice request',
+                  'instructions': llm_instructions, 'structure': structure} %}
+      {{ dict(d, entity_id=ai_task_entity) if ai_task_entity else d }}
+    response_variable: ai_result
+
+  - alias: Stop when the AI Task failed
+    if:
+      - condition: template
+        value_template: "{{ ai_result is not defined or ai_result.data is not defined }}"
+    then:
+      - variables:
+          tool_response:
+            success: false
+            error: The request could not be interpreted, ask the user to try again
+      - stop: AI Task failed
+        response_variable: tool_response
+
+  - alias: Interpret result and determine target players
+    variables:
+      llm: "{{ ai_result.data }}"
+      media_type: "{{ llm.media_type }}"
+      media_ids: >-
+        {% set ids = llm.get('media_id') or [] %}
+        {% set ids = [ids] if ids is string else ids | list %}
+        {{ (ids | map('trim') | reject('eq', '') | list)[:max_tracks | int] }}
+      media_id: "{{ media_ids | join(';') }}"
+      artist: "{{ llm.get('artist') or '' }}"
+      album: "{{ llm.get('album') or '' }}"
+      media_description: "{{ llm.get('media_description') or media_ids | join(', ') }}"
+      shuffle: "{{ llm.get('shuffle') == true }}"
+      radio_requested: "{{ llm.get('radio_mode') == true and media_type in ['artist', 'album', 'track', 'playlist'] }}"
+      latest_release: "{{ llm.get('latest_release') == true }}"
+      enqueue: "{{ llm.get('queue_action') or enqueue }}"
+      set_shuffle: "{{ shuffle or enqueue in ['replace', 'replace_next'] }}"
+      media_player: "{{ (llm.get('players') or []) | select('in', ma_players) | list }}"
+      llm_areas: "{{ (llm.get('areas') or []) | select('in', area_ids) | list }}"
+      llm_floors: "{{ (llm.get('floors') or []) | select('in', floor_ids) | list }}"
+      llm_target: "{{ (media_player + llm_areas + llm_floors) | count > 0 }}"
+      area: >-
+        {% set ns = namespace(a=llm_areas) %}
+        {% for f in llm_floors %}
+          {% set ns.a = ns.a + (floor_areas(f) | select('in', area_ids) | list) %}
+        {% endfor %}
+        {{ ns.a | unique | list }}
+      area_target_players: >-
+        {% set ns = namespace(p=[]) %}
+        {% for a in area %}
+          {% set in_area = ma_players | select('in', area_entities(a)) | list %}
+          {% set preferred = in_area | select('in', area_players) | list %}
+          {% set ns.p = ns.p + (preferred or in_area) %}
+        {% endfor %}
+        {{ ns.p | unique | list }}
+      target_players: >-
+        {% if llm_target %}
+          {{ (media_player + area_target_players) | unique | list }}
+        {% else %}
+          {{ [default_player] if default_player and default_player in ma_players else [] }}
+        {% endif %}
+      where: >-
+        {% if llm_target %}
+          {{ llm_areas | map('area_name') | list + llm_floors | map('floor_name') | list
+             + media_player | map('state_attr', 'friendly_name') | list }}
+        {% else %}
+          {{ target_players | map('state_attr', 'friendly_name') | list }}
+        {% endif %}
+      result_key: >-
+        {{ {'artist': 'artists', 'album': 'albums', 'track': 'tracks', 'playlist': 'playlists',
+            'radio': 'radio', 'audiobook': 'audiobooks', 'podcast': 'podcasts'}.get(media_type, 'tracks') }}
+      found_uris: []
+      found_items: []
+
+  - alias: Stop when no target could be determined
+    if:
+      - condition: template
+        value_template: "{{ target_players | count == 0 }}"
+    then:
+      - variables:
+          tool_response:
+            success: false
+            error: No location was given and no default player is set, ask the user where to play it
+      - stop: No target
+        response_variable: tool_response
+
+  - alias: Stop when the AI returned no media
+    if:
+      - condition: template
+        value_template: "{{ media_ids | count == 0 }}"
+    then:
+      - variables:
+          tool_response:
+            success: false
+            error: "{{ 'No media could be determined from the request: ' ~ query }}"
+      - stop: No media in AI result
+        response_variable: tool_response
+
+  - alias: Look up the media in Music Assistant
+    if:
+      - condition: template
+        value_template: "{{ verify_media }}"
+    then:
+      - repeat:
+          for_each: "{{ media_ids }}"
+          sequence:
+            - variables:
+                search_result: {}
+                library_result: {}
+            - alias: Look up the newest album in the library
+              if:
+                - condition: template
+                  value_template: "{{ latest_release and media_type == 'album' and artist != '' }}"
+              then:
+                - action: music_assistant.get_library
+                  continue_on_error: true
+                  data:
+                    config_entry_id: "{{ ma_config_entry }}"
+                    media_type: album
+                    search: "{{ artist }}"
+                    order_by: year_desc
+                    limit: 10
+                  response_variable: library_result
+            - variables:
+                library_match: >-
+                  {% set want = artist | lower %}
+                  {% set ns = namespace(i=none) %}
+                  {% for x in library_result.get('items', []) %}
+                    {% for a in x.get('artists') or [] %}
+                      {% if ns.i is none and want and (want in a.name | lower or a.name | lower in want) %}
+                        {% set ns.i = x %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                  {{ ns.i if ns.i else none }}
+            - alias: Search Music Assistant
+              if:
+                - condition: template
+                  value_template: "{{ library_match is none }}"
+              then:
+                - action: music_assistant.search
+                  continue_on_error: true
+                  data: >-
+                    {% set d = {
+                      'config_entry_id': ma_config_entry,
+                      'name': repeat.item,
+                      'media_type': [media_type],
+                      'artist': artist if media_type in ['track', 'album'] else '',
+                      'album': album if media_type == 'track' else '',
+                      'limit': 5 if artist and media_type in ['track', 'album'] else 1
+                    } %}
+                    {{ dict(d.items() | selectattr('1')) }}
+                  response_variable: search_result
+            - variables:
+                best_match: >-
+                  {% set r = search_result.get(result_key, []) %}
+                  {% set want = artist | lower %}
+                  {% set req = repeat.item | lower %}
+                  {% set strict = want and media_type in ['track', 'album'] %}
+                  {% set ns = namespace(i=none) %}
+                  {% if strict %}
+                    {% for x in r %}
+                      {% for a in x.get('artists') or [] %}
+                        {% if ns.i is none and (want in a.name | lower or a.name | lower in want) %}
+                          {% set ns.i = x %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endfor %}
+                  {% endif %}
+                  {% if ns.i is none and r %}
+                    {% set f = r | first %}
+                    {% if not strict or req in f.name | lower or f.name | lower in req %}
+                      {% set ns.i = f %}
+                    {% endif %}
+                  {% endif %}
+                  {{ library_match or (ns.i if ns.i else none) }}
+            - variables:
+                found_uris: "{{ (found_uris + ([best_match.uri] if best_match else [])) | unique | list }}"
+                found_items: >-
+                  {{ found_items + ([{'name': best_match.name, 'artist': ((best_match.get('artists') or [{}]) | first).get('name', '')}] if best_match else []) }}
+
+      - alias: Stop when nothing was found
+        if:
+          - condition: template
+            value_template: "{{ found_uris | count == 0 }}"
+        then:
+          - variables:
+              tool_response:
+                success: false
+                error: "{{ 'Nothing was found in Music Assistant for: ' ~ media_ids | join(', ') ~ '. Tell the user and ask if they want something else' }}"
+          - stop: Media not found
+            response_variable: tool_response
+      - alias: Use the title of the found item in the response
+        variables:
+          media_description: >-
+            {% if found_items | count == 1 %}
+              {% set i = found_items | first %}
+              {{ i.name ~ (' by ' ~ i.artist if i.artist and media_type in ['album', 'track'] else '') }}
+            {% else %}
+              {{ media_description }}
+            {% endif %}
+
+  - alias: Hand playback over to a second run
+    variables:
+      play_data: >-
+        {% set music = media_type in ['artist', 'album', 'track', 'playlist'] %}
+        {% set d = {
+          'media_id': found_uris if verify_media else media_ids,
+          'media_type': media_type,
+          'artist': 'NA' if verify_media or media_type not in ['track', 'album'] else artist or 'NA',
+          'album': 'NA' if verify_media or media_type != 'track' else album or 'NA',
+          'enqueue': enqueue,
+          'radio_mode': 'NA' if not radio_requested and play_continuously == 'Use player settings'
+                        else music and (radio_requested or play_continuously == 'Always'),
+          'start_item': 'latest' if media_type == 'podcast' else 'NA'
+        } %}
+        {{ dict(d.items() | rejectattr('1', 'eq', 'NA')) }}
+  - alias: Start the second run
+    action: script.turn_on
+    target:
+      entity_id: "{{ this.entity_id }}"
+    data:
+      variables:
+        ma_play:
+          target_players: "{{ target_players }}"
+          play_data: "{{ play_data }}"
+          shuffle: "{{ shuffle }}"
+          set_shuffle: "{{ set_shuffle }}"
+
+  - alias: Additional actions
+    sequence: !input actions
+
+  - alias: Return the result to the LLM
+    variables:
+      tool_response:
+        success: true
+        status: Playback is starting
+        playing: "{{ media_description }}"
+        media_type: "{{ media_type }}"
+        shuffle: "{{ shuffle }}"
+        queue: >-
+          {{ {'replace': 'The queue was replaced', 'replace_next': 'The queue was replaced after the current song',
+              'play': 'Playing now, the rest of the queue was kept', 'next': 'It will play after the current song',
+              'add': 'It was added to the end of the queue'}.get(enqueue, enqueue) }}
+        where: "{{ where }}"
+  - stop: Playback handed over
+    response_variable: tool_response

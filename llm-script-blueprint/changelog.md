@@ -20,3 +20,8 @@
 
 ## 20250526
 * Add default for `shuffle`  setting in case not set properly by LLM
+
+## 20261116
+
+* Added version 2 (`llm_voice_script_v2.yaml`) with a single `query` field, interpreted by an AI Task (`ai_task.generate_data`). See the README for the differences with version 1
+* Version 1 is unchanged
