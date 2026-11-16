@@ -2,6 +2,8 @@ blueprint:
   domain: automation
   name: Music Assistant - Helyi (kizárólag) hangvezérlés sablon-automatizmus
   source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_hu.yaml
+  homeassistant:
+    min_version: 2026.11.0
   description: ' ![Kép](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
 
     # Zene lejátszása hangparancsokkal
@@ -274,7 +276,7 @@ actions:
       '
     mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name
       \nor player_entity_id_by_assist_area or [default_player_entity_id] }}\n"
-    mass_player_name: '{{ mass_player_entity_id | map(''state_attr'', ''friendly_name'')
+    mass_player_name: '{{ mass_player_entity_id | map(''entity_name'', fallback=true)
       | join('', '') }}'
 - alias: Média küldése a kiválasztott Music Assistant lejátszónak
   action: music_assistant.play_media

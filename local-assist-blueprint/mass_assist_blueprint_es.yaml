@@ -2,6 +2,8 @@ blueprint:
   domain: automation
   name: Music Assistant - Soporte para voz - Blueprint
   source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_es.yaml
+  homeassistant:
+    min_version: 2026.11.0
   description: "
     ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
 
@@ -200,7 +202,7 @@ actions:
       mass_player_entity_id: |
         {{ player_entity_id_by_player_name or player_entity_id_by_area_name 
         or player_entity_id_by_assist_area or [default_player_entity_id] }}
-      mass_player_name: "{{ mass_player_entity_id | map('state_attr', 'friendly_name') | join(', ') }}"
+      mass_player_name: "{{ mass_player_entity_id | map('entity_name', fallback=true) | join(', ') }}"
   - alias: Enviar medios al reproductor de Music Assistant seleccionado
     action: music_assistant.play_media
     data: "{{ dict(action_data.items() | selectattr('1')) }}"

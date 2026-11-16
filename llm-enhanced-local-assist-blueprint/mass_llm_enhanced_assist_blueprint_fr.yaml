@@ -94,7 +94,7 @@ blueprint:
     Lecture aléatoire de l'album Classical Nights sur le Sonos de la chambre
     ```"
   homeassistant:
-    min_version: 2024.10.0
+    min_version: 2026.11.0
   input:
     llm_agent:
       name: Agent conversationnel (LLM)
@@ -474,8 +474,7 @@ actions:
         "{{ integration_entities('music_assistant')  | map('area_name')
         | join(', ') }}"
       player_names:
-        "{{ integration_entities('music_assistant') | map('state_attr',
-        'friendly_name') | join(', ') }}"
+        "{{ integration_entities('music_assistant') | select('match', 'media_player') | map('entity_name', fallback=true) | join(', ') }}"
   - alias: Envoi de la requête au LLM
     action: conversation.process
     data:
@@ -551,7 +550,7 @@ actions:
         "{{ area_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ area_list[-1]
         if area_list | count > 2 else area_list | join(' ' ~ combine ~ ' ') }}"
       player_list:
-        "{{ target.get('entity_id') | map('state_attr', 'friendly_name')
+        "{{ target.get('entity_id') | map('entity_name', fallback=true)
         | list }}"
       player_info:
         "{{ player_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ player_list[-1]

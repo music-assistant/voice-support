@@ -102,7 +102,7 @@ blueprint:
 
     ```'
   homeassistant:
-    min_version: 2024.10.0
+    min_version: 2026.11.0
   input:
     llm_agent:
       name: LLM converation agent
@@ -485,8 +485,7 @@ actions:
       outro: !input llm_prompt_outro
     area_names: '{{ integration_entities(''music_assistant'')  | map(''area_name'')
       | reject(''none'') | join('', '') }}'
-    player_names: '{{ integration_entities(''music_assistant'') | map(''state_attr'',
-      ''friendly_name'') | join('', '') }}'
+    player_names: '{{ integration_entities(''music_assistant'') | select(''match'', ''media_player'') | map(''entity_name'', fallback=true) | join('', '') }}'
 - alias: Send the request to the LLM
   action: conversation.process
   data:
@@ -558,7 +557,7 @@ actions:
     area_list: '{{ target.get(''area_id'', []) | map(''area_name'') | list }}'
     area_info: '{{ area_list[:-1] | join('', '') ~ '' '' ~ combine ~ '' '' ~ area_list[-1]
       if area_list | count > 2 else area_list | join('' '' ~ combine ~ '' '') }}'
-    player_list: '{{ target.get(''entity_id'') | map(''state_attr'', ''friendly_name'')
+    player_list: '{{ target.get(''entity_id'') | map(''entity_name'', fallback=true)
       | list }}'
     player_info: '{{ player_list[:-1] | join('', '') ~ '' '' ~ combine ~ '' '' ~ player_list[-1]
       if player_list | count > 2 else player_list | join('' '' ~ combine ~ '' '')

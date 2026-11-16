@@ -73,7 +73,7 @@ blueprint:
   domain: script
   author: TheFes
   homeassistant:
-    min_version: 2024.6.0
+    min_version: 2026.11.0
   input:
     music_assistant_settings:
       name: Settings for Music Assistant playback
@@ -359,7 +359,7 @@ sequence:
     shuffle: '{{ shuffle | default(false, true) | bool(false) }}'
     player_data: '{% set ma = integration_entities(''music_assistant'') %}
 
-      {% set ma_names = ma | map(''state_attr'', ''friendly_name'') | list %}
+      {% set ma_names = ma | select(''match'', ''media_player'') | map(''entity_name'', fallback=true) | list %}
 
       {% set ns = namespace(players=[]) %} {% for player in media_player | default([],
       true) %}
@@ -370,10 +370,10 @@ sequence:
 
       {% elif player in ma_names %}
 
-      {% set entity = ma | select(''is_state_attr'', ''friendly_name'', player) |
-      list %}
+      {% set found = namespace(e=[]) %} {% for x in ma if x.startswith(''media_player.'') and entity_name(x, fallback=true)
+      == player %}{% set found.e = found.e + [x] %}{% endfor %}
 
-      {% set ns.players = ns.players + entity %}
+      {% set ns.players = ns.players + found.e %}
 
       {% endif %}
 
