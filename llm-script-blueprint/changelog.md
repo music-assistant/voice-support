@@ -20,3 +20,7 @@
 
 ## 20250526
 * Add default for `shuffle`  setting in case not set properly by LLM
+
+## 20261116
+
+* Use `entity_name(fallback=true)` instead of the `friendly_name` attribute for player names, as `friendly_name` is being deprecated since the naming changes in Home Assistant 2026.11. The minimum Home Assistant version is now 2026.11
