@@ -22,3 +22,5 @@
 * Added version 2 (`mass_llm_ai_task_assist_v2.yaml`) which uses an AI Task (`ai_task.generate_data`) instead of a conversation agent. See the README for the differences with version 1
 * Version 2 also supports moving the music to another place ("move the music to the kitchen")
 * Version 1 is unchanged
+
+* Use `entity_name(fallback=true)` instead of the `friendly_name` attribute for player names, as `friendly_name` is being deprecated since the naming changes in Home Assistant 2026.11. The minimum Home Assistant version of version 2 is now 2026.11

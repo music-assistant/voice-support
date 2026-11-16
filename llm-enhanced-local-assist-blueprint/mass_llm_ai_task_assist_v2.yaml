@@ -69,7 +69,7 @@ blueprint:
     `music_assistant_ai_task_play` event), so you don't have to wait until
     Music Assistant has started the stream.
   homeassistant:
-    min_version: 2025.8.0
+    min_version: 2026.11.0
   input:
     ai_settings:
       name: AI settings
@@ -385,7 +385,7 @@ actions:
 
   - alias: Collect Music Assistant players, areas and floors
     variables:
-      version: 2026111602
+      version: 2026111603
       ai_task_entity: !input ai_task_entity
       max_tracks: !input max_tracks
       area_players: !input area_players
@@ -412,7 +412,7 @@ actions:
         {% set ns = namespace(o=[]) %}
         {% for e in ma_players %}
           {% set a = area_name(e) %}
-          {% set ns.o = ns.o + [{'value': e, 'label': state_attr(e, 'friendly_name') ~ (' (' ~ a ~ ')' if a else '')}] %}
+          {% set ns.o = ns.o + [{'value': e, 'label': entity_name(e, fallback=true) ~ (' (' ~ a ~ ')' if a else '')}] %}
         {% endfor %}
         {{ ns.o }}
       area_options: >-
@@ -504,7 +504,7 @@ actions:
         {% set ns = namespace(txt=(llm.get('location') or '') | lower, c=[], p=[], a=[], f=[]) %}
         {% if not expose_names and ns.txt %}
           {% for e in ma_players %}
-            {% set n = (state_attr(e, 'friendly_name') or '') | lower %}
+            {% set n = (entity_name(e, fallback=true) or '') | lower %}
             {% set ns.c = ns.c + [{'id': e, 'n': n, 'l': n | length}] %}
           {% endfor %}
           {% for c in ns.c | sort(attribute='l', reverse=true) %}
@@ -560,9 +560,9 @@ actions:
         {% endif %}
       player_list: >-
         {% if llm_target %}
-          {{ llm_players | map('state_attr', 'friendly_name') | list }}
+          {{ llm_players | map('entity_name', fallback=true) | list }}
         {% else %}
-          {{ [] if satellite_area or not default_player else [state_attr(default_player, 'friendly_name')] }}
+          {{ [] if satellite_area or not default_player else [entity_name(default_player, fallback=true)] }}
         {% endif %}
       area_info: >-
         {{ area_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ area_list[-1]

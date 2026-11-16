@@ -207,7 +207,7 @@ The sentence triggers of this blueprint take priority over built-in intents, so 
 
 #### Requirements
 
-* Home Assistant 2025.8 or newer
+* Home Assistant 2026.11 or newer (the blueprint uses `entity_name`, which replaces the `friendly_name` attribute)
 * An AI Task entity (for example from [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/), [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) or [Ollama](https://www.home-assistant.io/integrations/ollama/)). It doesn't need access to your house, the blueprint hands it everything it needs.
 
 #### What is different compared to version 1
