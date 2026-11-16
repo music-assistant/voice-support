@@ -20,3 +20,11 @@
 
 ## 20250526
 * Add default for `shuffle`  setting in case not set properly by LLM
+
+## 20261116
+
+* Added version 2 (`llm_voice_script_v2.yaml`) with a single `query` field, interpreted by an AI Task (`ai_task.generate_data`). See the README for the differences with version 1
+* Version 2 also supports moving the music to another place (`request_type` transfer)
+* Version 1 is unchanged
+
+* Use `entity_name(fallback=true)` instead of the `friendly_name` attribute for player names, as `friendly_name` is being deprecated since the naming changes in Home Assistant 2026.11. The minimum Home Assistant version of version 2 is now 2026.11

@@ -238,3 +238,81 @@ All responses and results are generated each time the script is used, so don't e
   Response: *I am now shuffling music by Billy Talent in the workshop. Enjoy the tunes!*
   
   Result: songs by Billy Talent will be played in the area the command was issued from, and the player in that area will have its shuffle setting turned on
+
+
+## Option 3 - version 2 (AI Task, one `query` field)
+
+Version 2 of the script gives the LLM a single field, `query`, and interprets it with the [AI Task](https://www.home-assistant.io/integrations/ai_task/) action `ai_task.generate_data`. It is added next to the original blueprint, because the fields and inputs changed too much to update the original in place. The original blueprint keeps working.
+
+The blueprint is located in the `llm-script-blueprint` folder of this repository and can be imported by using the following button:
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Fllm-script-blueprint%2Fllm_voice_script_v2.yaml)
+
+### When to use this instead of the built-in Search and Play intent
+
+Since Home Assistant 2025.6 the built-in `Search and Play` intent works with Music Assistant without any blueprint or LLM, see the [Music Assistant voice documentation](https://music-assistant.io/integration/voice/). For requests like "play Rumours in the kitchen" it is enough. Use this blueprint when you need something the built-in intent can't express:
+
+* Artist (and album) qualifiers, like "the album Rumours by Fleetwood Mac", and "the latest album by ..."
+* Shuffle, radio mode and queue actions (play next, add to the queue, replace the queue)
+* Checking the result against what was asked, and telling the user when nothing matching was found, instead of playing the first match
+* Moving the music that is playing to another player or area
+
+If both this blueprint and the built-in intent are available, the LLM can choose either of them. Keep to one way of working per voice assistant, and make the description of the script clear about when it should be used.
+
+### Requirements
+
+* Home Assistant 2026.11 or newer (the blueprint uses `entity_name`, which replaces the `friendly_name` attribute)
+* An LLM conversation agent in your voice pipeline which is allowed to control your house (so it can call the script), as for version 1
+* An AI Task entity, this can be the same integration, but it can also be another model
+
+### Configuration
+
+1. Import the blueprint and create a script with it. Select the AI Task entity (leave it empty to use the preferred AI Task entity) and optionally change the Music Assistant playback settings.
+2. Give the script a clear description, as that is what the LLM uses to decide when to call it. Suggestion:
+>   Play music with Music Assistant. Use this tool whenever the user asks to move the music that is playing to another place, or to play, shuffle or listen to music, an artist, an album, a song, a playlist or a radio station. Pass the complete request in the query field, in the words of the user, and add where to play it (the area the request comes from) when the user does not mention a location.
+3. Save the script and expose it to Assist.
+
+### What is different compared to version 1
+
+|Topic|Version 1|Version 2|
+|---|---|---|
+|Fields|Eight fields (`media_type`, `artist`, `album`, `media_id`, `media_description`, `area`, `media_player`, `shuffle`), each with its own prompt input. The LLM has to fill them all in correctly|One field: `query`. The LLM just passes the request, which is a lot easier for smaller models and uses far fewer tokens per call|
+|Interpretation|By the LLM which calls the script|By `ai_task.generate_data` with a structure: media types, areas, floors and Music Assistant players are selectors, so only values which exist can come back. One set of instructions (`Instructions for the AI`) replaces the eight prompt inputs|
+|Result for the LLM|Nothing, except an error when no target was found|A clear result (`success`, `status`, what is playing, where, shuffle and queue info). When something is not found the LLM gets that back and can tell you, instead of guessing|
+|Media check|Names are passed to Music Assistant as they are|Every item is looked up with `music_assistant.search` first. The result has the real title and artist. Matches are only accepted when the artist (or title) resembles the request|
+|Response speed|The LLM waits until playback has started|The script hands playback over to a second run of itself and returns immediately|
+|Floors|Not supported|Supported|
+|Several players in an area|`area` is passed to Music Assistant, all players in it are used|Optionally only the players selected in `Preferred players per area`. Unavailable players are skipped|
+|Queue|Always replaces the queue|`Queue behaviour` setting, which can be overridden in the request: "add ... to the queue", "play ... next"|
+|Latest release|Depends on what the model knows|"the latest album by ..." looks up the newest album in your library, so it also works when the model's knowledge is outdated. Only albums in your library are found this way, otherwise the title suggested by the AI is used|
+|More than one item|Not supported|The AI can return several titles (up to `Maximum number of tracks`) for requests like a genre or mood|
+|Podcasts and audiobooks|Not supported|Supported|
+|Moving the music|Not supported|"Move the music to the kitchen" moves the queue of the player that is playing to the target, and the LLM gets the result|
+
+### Removed and renamed inputs
+
+|Version 1|Version 2|
+|---|---|
+|`media_type_prompt`, `artist_prompt`, `album_prompt`, `media_id_prompt`, `media_description_prompt`, `area_prompt`, `media_player_prompt`, `shuffle_prompt`|`llm_instructions` (for the AI Task) and `query_prompt` (the description of the `query` field)|
+|`default_player`, `play_continuously`, `actions`|Unchanged|
+|-|New: `ai_task_entity`, `max_tracks`, `area_players`, `enqueue`, `verify_media`|
+
+The variables for the additional actions are listed in the description of the blueprint. `media_type`, `artist`, `album`, `media_id`, `media_description`, `area`, `media_player` and `shuffle` are still available, `query`, `media_ids`, `found_items`, `target_players`, `enqueue` and `latest_release` are new.
+
+### Switching from version 1
+
+Create a new script from the version 2 blueprint, give it the description above, expose it to Assist and remove the exposure of the old script (or delete it). Don't keep both exposed, the LLM can't know which one to use. Prompt changes you made for version 1 can't be copied, as the fields they described no longer exist. What is specific for your setup can be added to `Instructions for the AI`.
+
+### Examples
+
+- Command: *Add the latest album by Muse to the queue in the kitchen*
+
+  Result: the newest Muse album in your library is added to the end of the queue of the kitchen player, the LLM is told what was added and where
+
+- Command: *Play the album that has the nude baby swimming in the water on the cover in the living room*
+
+  Result: *Nevermind* by Nirvana is played in the living room
+
+- Command: *Play some jazz downstairs*
+
+  Result: a list of jazz tracks is played on the players downstairs
