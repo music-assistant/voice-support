@@ -22,7 +22,7 @@ blueprint:
 
     ### Example for the script description
 
-    `Play music with Music Assistant. Use this tool whenever the user asks to
+    `Play music with Music Assistant. Use this tool whenever the user asks to move the music that is playing to another place, or to
     play, shuffle or listen to music, an artist, an album, a song, a playlist or a
     radio station. Pass the complete request in the query field, in the
     words of the user, and add where to play it (the area the request comes from)
@@ -150,6 +150,12 @@ blueprint:
             ("add to the queue", "voeg toe aan de wachtrij"), next to play it after
             the current song ("play next", "speel hierna"), play to play it right
             away and keep the rest of the queue, replace to start a new queue.
+
+            - request_type: play when the user wants to hear something. Use
+            transfer when the user wants to move the music that is playing to
+            another place ("move the music to the kitchen", "verplaats de muziek
+            naar de keuken"), then fill in the target place and leave media_id
+            empty.
           selector:
             text:
               multiline: true
@@ -337,9 +343,11 @@ sequence:
         {{ ns.o }}
       structure: >-
         {% set s = {
+          'request_type': {'description': 'Play new media, or move the music that is playing to another place', 'required': true,
+            'selector': {'select': {'options': ['play', 'transfer']}}},
           'media_type': {'description': 'Type of media requested', 'required': true,
             'selector': {'select': {'options': ['artist', 'album', 'track', 'playlist', 'radio', 'audiobook', 'podcast']}}},
-          'media_id': {'description': 'Exact title(s) of the item(s) to play', 'required': true,
+          'media_id': {'description': 'Exact title(s) of the item(s) to play. Not needed to move the music', 'required': false,
             'selector': {'text': {'multiple': true}}},
           'artist': {'description': 'Artist name, only when it narrows the search', 'selector': {'text': {}}},
           'album': {'description': 'Album name, only when it narrows the search', 'selector': {'text': {}}},
@@ -402,7 +410,8 @@ sequence:
   - alias: Interpret result and determine target players
     variables:
       llm: "{{ ai_result.data }}"
-      media_type: "{{ llm.media_type }}"
+      request_type: "{{ llm.get('request_type') or 'play' }}"
+      media_type: "{{ llm.get('media_type') or 'track' }}"
       media_ids: >-
         {% set ids = llm.get('media_id') or [] %}
         {% set ids = [ids] if ids is string else ids | list %}
@@ -463,6 +472,41 @@ sequence:
             success: false
             error: No location was given and no default player is set, ask the user where to play it
       - stop: No target
+        response_variable: tool_response
+
+  - alias: Move the music to the target
+    if:
+      - condition: template
+        value_template: "{{ request_type == 'transfer' }}"
+    then:
+      - variables:
+          source_players: >-
+            {{ ma_players | select('is_state', ['playing', 'paused'])
+               | reject('in', target_players) | list }}
+      - if:
+          - condition: template
+            value_template: "{{ source_players | count == 0 }}"
+        then:
+          - variables:
+              tool_response:
+                success: false
+                error: There is no music playing that can be moved
+          - stop: Nothing to move
+            response_variable: tool_response
+      - action: music_assistant.transfer_queue
+        continue_on_error: true
+        target:
+          entity_id: "{{ target_players }}"
+        data:
+          source_player: "{{ source_players | first }}"
+          auto_play: true
+      - variables:
+          tool_response:
+            success: true
+            status: The music was moved
+            moved_from: "{{ source_players | first | state_attr('friendly_name') }}"
+            where: "{{ where }}"
+      - stop: Music moved
         response_variable: tool_response
 
   - alias: Stop when the AI returned no media

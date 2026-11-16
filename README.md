@@ -258,7 +258,7 @@ The blueprint is located in the `llm-script-blueprint` folder of this repository
 
 1. Import the blueprint and create a script with it. Select the AI Task entity (leave it empty to use the preferred AI Task entity) and optionally change the Music Assistant playback settings.
 2. Give the script a clear description, as that is what the LLM uses to decide when to call it. Suggestion:
->   Play music with Music Assistant. Use this tool whenever the user asks to play, shuffle or listen to music, an artist, an album, a song, a playlist or a radio station. Pass the complete request in the query field, in the words of the user, and add where to play it (the area the request comes from) when the user does not mention a location.
+>   Play music with Music Assistant. Use this tool whenever the user asks to move the music that is playing to another place, or to play, shuffle or listen to music, an artist, an album, a song, a playlist or a radio station. Pass the complete request in the query field, in the words of the user, and add where to play it (the area the request comes from) when the user does not mention a location.
 3. Save the script and expose it to Assist.
 
 ### What is different compared to version 1
@@ -276,6 +276,7 @@ The blueprint is located in the `llm-script-blueprint` folder of this repository
 |Latest release|Depends on what the model knows|"the latest album by ..." looks up the newest album in your library, so it also works when the model's knowledge is outdated. Only albums in your library are found this way, otherwise the title suggested by the AI is used|
 |More than one item|Not supported|The AI can return several titles (up to `Maximum number of tracks`) for requests like a genre or mood|
 |Podcasts and audiobooks|Not supported|Supported|
+|Moving the music|Not supported|"Move the music to the kitchen" moves the queue of the player that is playing to the target, and the LLM gets the result|
 
 ### Removed and renamed inputs
 

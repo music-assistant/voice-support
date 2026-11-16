@@ -24,4 +24,5 @@
 ## 20261116
 
 * Added version 2 (`llm_voice_script_v2.yaml`) with a single `query` field, interpreted by an AI Task (`ai_task.generate_data`). See the README for the differences with version 1
+* Version 2 also supports moving the music to another place (`request_type` transfer)
 * Version 1 is unchanged
