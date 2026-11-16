@@ -261,7 +261,7 @@ If both this blueprint and the built-in intent are available, the LLM can choose
 
 ### Requirements
 
-* Home Assistant 2025.8 or newer
+* Home Assistant 2026.11 or newer (the blueprint uses `entity_name`, which replaces the `friendly_name` attribute)
 * An LLM conversation agent in your voice pipeline which is allowed to control your house (so it can call the script), as for version 1
 * An AI Task entity, this can be the same integration, but it can also be another model
 

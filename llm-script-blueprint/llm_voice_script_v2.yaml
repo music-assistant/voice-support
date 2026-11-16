@@ -64,7 +64,7 @@ blueprint:
     |`latest_release`|True when the newest album of the artist was requested|
     |`default_player`|The default player set in the blueprint, if any|
   homeassistant:
-    min_version: 2025.8.0
+    min_version: 2026.11.0
   input:
     ai_settings:
       name: AI settings
@@ -326,7 +326,7 @@ sequence:
         {% set ns = namespace(o=[]) %}
         {% for e in ma_players %}
           {% set a = area_name(e) %}
-          {% set ns.o = ns.o + [{'value': e, 'label': state_attr(e, 'friendly_name') ~ (' (' ~ a ~ ')' if a else '')}] %}
+          {% set ns.o = ns.o + [{'value': e, 'label': entity_name(e, fallback=true) ~ (' (' ~ a ~ ')' if a else '')}] %}
         {% endfor %}
         {{ ns.o }}
       area_options: >-
@@ -452,9 +452,9 @@ sequence:
       where: >-
         {% if llm_target %}
           {{ llm_areas | map('area_name') | list + llm_floors | map('floor_name') | list
-             + media_player | map('state_attr', 'friendly_name') | list }}
+             + media_player | map('entity_name', fallback=true) | list }}
         {% else %}
-          {{ target_players | map('state_attr', 'friendly_name') | list }}
+          {{ target_players | map('entity_name', fallback=true) | list }}
         {% endif %}
       result_key: >-
         {{ {'artist': 'artists', 'album': 'albums', 'track': 'tracks', 'playlist': 'playlists',
@@ -504,7 +504,7 @@ sequence:
           tool_response:
             success: true
             status: The music was moved
-            moved_from: "{{ source_players | first | state_attr('friendly_name') }}"
+            moved_from: "{{ source_players | first | entity_name(fallback=true) }}"
             where: "{{ where }}"
       - stop: Music moved
         response_variable: tool_response
