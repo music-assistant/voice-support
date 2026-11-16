@@ -186,6 +186,78 @@ Shuffle songs by Muse.
 Shuffle the album Classical Nights on the Bedroom Sonos Speaker
 ```
 
+### Option 2 - version 2 (AI Task)
+
+Version 2 is a rewrite which uses the [AI Task](https://www.home-assistant.io/integrations/ai_task/) action `ai_task.generate_data` with structured output instead of asking a conversation agent for JSON. It is added next to the original blueprint, because the inputs changed too much to update the original in place. The original blueprint keeps working.
+
+The blueprint is located in the `llm-enhanced-local-assist-blueprint` folder of this repository and can be imported by using the following button:
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Fllm-enhanced-local-assist-blueprint%2Fmass_llm_ai_task_assist_v2.yaml)
+
+#### When to use this instead of the built-in Search and Play intent
+
+Since Home Assistant 2025.6 the built-in `Search and Play` intent works with Music Assistant without any blueprint or LLM, see the [Music Assistant voice documentation](https://music-assistant.io/integration/voice/). For requests like "play Rumours in the kitchen" it is enough. Use this blueprint when you need something the built-in intent can't express:
+
+* Artist (and album) qualifiers, like "the album Rumours by Fleetwood Mac", and "the latest album by ..."
+* Shuffle, radio mode and queue actions (play next, add to the queue, replace the queue)
+* Checking the result against what was asked, and telling the user when nothing matching was found, instead of playing the first match
+* Moving the music that is playing to another player or area
+
+The sentence triggers of this blueprint take priority over built-in intents, so a sentence that matches one of them is handled by this blueprint. Sentences that don't match are still handled by the built-in intent.
+
+#### Requirements
+
+* Home Assistant 2026.11 or newer (the blueprint uses `entity_name`, which replaces the `friendly_name` attribute)
+* An AI Task entity (for example from [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/), [OpenAI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) or [Ollama](https://www.home-assistant.io/integrations/ollama/)). It doesn't need access to your house, the blueprint hands it everything it needs.
+
+#### What is different compared to version 1
+
+|Topic|Version 1|Version 2|
+|---|---|---|
+|LLM call|Conversation agent, the LLM has to answer in JSON which is parsed afterwards|`ai_task.generate_data` with a structure, the answer always has the right shape|
+|Valid targets|The LLM answers with area and player names, which are matched against your Music Assistant areas and players with a text search|Media types, areas, floors and Music Assistant players are selectors, so the LLM can only return values which exist. The result is checked again in the automation|
+|Prompt|Nine separate prompt inputs plus a combined prompt|One `Instructions for the AI` input, the output format is enforced by the structure|
+|Area/player names|Two settings (`expose_players`, `expose_areas`). Names are matched on the exact name when not exposed|One setting `Share area, floor and player names with the AI`. When enabled the names are sent together with their ids, so renamed areas and old random area ids work. When disabled the AI only returns the location as spoken and the names are matched inside Home Assistant|
+|Floors|Not supported|Supported ("play jazz downstairs")|
+|Media check|Names are passed to Music Assistant as they are|Every item is looked up with `music_assistant.search` first. Assist answers with the real title and artist, and uses the `Not found response` when nothing matches. Matches are only accepted when the artist (or title) resembles the request, so a wrong item isn't played|
+|Response speed|Assist waits until playback has started|Assist answers as soon as the media is found, playback is started by a second run of the automation|
+|Several players in an area|All Music Assistant players in the area are used|Optionally only the players selected in `Preferred players per area`. Unavailable players are skipped|
+|Queue|Always replaces the queue|`Queue behaviour` setting, which you can override by voice: "add ... to the queue", "play ... next", "play ... now and keep the queue"|
+|Latest release|Depends on what the model knows|"play the latest album by ..." looks up the newest album in your library, so it also works when the model's knowledge is outdated. Only albums in your library are found this way, otherwise the title suggested by the AI is used|
+|Playback control|"Play" sentences which only want to resume or skip are handled as a new request|The AI also classifies the request. Resume, next, previous, pause and stop are done on the players in the target area|
+|Moving the music|Not supported|"Move the music to the kitchen" moves the queue of the player that is playing to the target (`Move music response`, `Nothing playing response`)|
+|Shuffle|Shuffle on/off per request|Same, but shuffle is not changed when you add to an existing queue|
+|Responses|Area, player and area+player responses|Same, plus `Not found`, `Playback control` and `Error` responses. `shuffle` and `enqueue` are available as variables, `<media_info>` is replaced by the title that was found|
+
+#### Removed and renamed inputs
+
+|Version 1|Version 2|
+|---|---|
+|`llm_agent`|`ai_task_entity` (leave empty to use the preferred AI Task entity)|
+|`expose_players`, `expose_areas`|`expose_names`|
+|`llm_prompt_*`, `llm_prompt`|`llm_instructions`|
+|`play_continuously`, `default_player`, responses, `trigger`, `combine_text`|Unchanged|
+|-|New: `max_tracks`, `area_players`, `enqueue`, `verify_media`, `artist_text`, `not_found_response`, `control_response`, `transfer_response`, `nothing_playing_response`, `error_response`|
+
+#### Switching from version 1
+
+Both versions listen to the same sentences, so create the new automation from the version 2 blueprint, check it with a few requests and then disable (or delete) the automation based on version 1. Your own prompt changes from version 1 can't be copied one to one, because the output format is no longer part of the prompt. Add what is specific for your setup to `Instructions for the AI`.
+
+#### Examples
+
+```
+Play the latest album by Foo Fighters in the kitchen
+Add Bohemian Rhapsody by Queen to the queue in the living room
+Play the album that has the nude baby swimming in the water on the cover
+Shuffle jazz downstairs
+Continue playing in the bedroom
+Move the music to the kitchen
+```
+
+The default trigger sentences also contain `(move|transfer|send) [the ]music to {query}` for moving the music. If you changed or translated the trigger sentences, add a sentence for it, for example `(verplaats|verhuis) de muziek naar {query}`.
+
+The `Usage` and `How the target for the media is determined` sections of option 2 above apply to version 2 as well.
+
 ## Option 3: Script which can be used as a tool by an LLM integration like [Open AI Conversation](https://www.home-assistant.io/integrations/openai_conversation/) (ChatGPT) or [Google Generative AI](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) (Gemini).
 
 The blueprint is located in the `llm-script-blueprint` folder of this repository and can be imported by using the following button:
