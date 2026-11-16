@@ -40,6 +40,12 @@ blueprint:
     the target area (preferring players that are playing or paused).
 
 
+    ### Moving the music
+
+    "Move the music to the kitchen" moves the queue of the player that is
+    playing to the target, and keeps playing there.
+
+
     ### Queue and latest releases
 
     You can say what to do with the queue ("add ... to the queue", "play ...
@@ -170,6 +176,9 @@ blueprint:
             without saying what to play (like just "play" or "play on"), also when a
             location is mentioned, is resume.
             For those, media_id can be empty.
+            Use transfer when the user wants to move the music that is playing to
+            another place ("move the music to the kitchen", "verplaats de muziek
+            naar de keuken") and fill in the target place. media_id can be empty.
           selector:
             text:
               multiline: true
@@ -258,6 +267,7 @@ blueprint:
             target.
           default:
             - (shuffle|play|listen to) {query}
+            - (move|transfer|send) [the ]music to {query}
           selector:
             text:
               multiple: true
@@ -311,6 +321,20 @@ blueprint:
           default: Done
           selector:
             text:
+        transfer_response:
+          name: Move music response
+          description: >-
+            Response after the music was moved to another place. `<area_info>`
+            and `<player_info>` are replaced with the target.
+          default: Moved the music to <area_info> <player_info>
+          selector:
+            text:
+        nothing_playing_response:
+          name: Nothing playing response
+          description: Used when asked to move the music while nothing is playing.
+          default: There is no music playing that I can move
+          selector:
+            text:
         error_response:
           name: Error response
           description: Used when the AI Task fails or returns no usable result.
@@ -361,7 +385,7 @@ actions:
 
   - alias: Collect Music Assistant players, areas and floors
     variables:
-      version: 2026111601
+      version: 2026111602
       ai_task_entity: !input ai_task_entity
       max_tracks: !input max_tracks
       area_players: !input area_players
@@ -414,7 +438,7 @@ actions:
           'media_type': {'description': 'Type of media requested', 'required': true,
             'selector': {'select': {'options': ['artist', 'album', 'track', 'playlist', 'radio', 'audiobook', 'podcast']}}},
           'request_type': {'description': 'Play new media, or control what is already playing', 'required': true,
-            'selector': {'select': {'options': ['play', 'resume', 'next', 'previous', 'pause', 'stop']}}},
+            'selector': {'select': {'options': ['play', 'resume', 'next', 'previous', 'pause', 'stop', 'transfer']}}},
           'media_id': {'description': 'Exact title(s) of the item(s) to play. Required for play requests', 'required': true,
             'selector': {'text': {'multiple': true}}},
           'artist': {'description': 'Artist name, only when it narrows the search', 'selector': {'text': {}}},
@@ -564,10 +588,45 @@ actions:
         {% set active = p | select('is_state', ['playing', 'paused']) | list %}
         {{ active or p }}
 
+  - alias: Move the music to the target
+    if:
+      - condition: template
+        value_template: "{{ request_type == 'transfer' }}"
+    then:
+      - if:
+          - condition: template
+            value_template: "{{ target_players | count == 0 }}"
+        then:
+          - set_conversation_response: !input no_target_response
+          - stop: No target to move the music to
+      - variables:
+          source_players: >-
+            {{ ma_players | select('is_state', ['playing', 'paused'])
+               | reject('in', target_players) | list }}
+          transfer_text: !input transfer_response
+          nothing_text: !input nothing_playing_response
+      - if:
+          - condition: template
+            value_template: "{{ source_players | count == 0 }}"
+        then:
+          - set_conversation_response: "{{ nothing_text }}"
+          - stop: Nothing to move
+      - action: music_assistant.transfer_queue
+        continue_on_error: true
+        target:
+          entity_id: "{{ target_players }}"
+        data:
+          source_player: "{{ source_players | first }}"
+          auto_play: true
+      - set_conversation_response: >-
+          {{ transfer_text | replace('<area_info>', area_info)
+             | replace('<player_info>', player_info) | trim }}
+      - stop: Music moved
+
   - alias: Handle playback control requests
     if:
       - condition: template
-        value_template: "{{ request_type != 'play' }}"
+        value_template: "{{ request_type not in ['play', 'transfer'] }}"
     then:
       - if:
           - condition: template

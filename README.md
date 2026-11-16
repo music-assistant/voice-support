@@ -214,6 +214,7 @@ The blueprint is located in the `llm-enhanced-local-assist-blueprint` folder of 
 |Queue|Always replaces the queue|`Queue behaviour` setting, which you can override by voice: "add ... to the queue", "play ... next", "play ... now and keep the queue"|
 |Latest release|Depends on what the model knows|"play the latest album by ..." looks up the newest album in your library, so it also works when the model's knowledge is outdated. Only albums in your library are found this way, otherwise the title suggested by the AI is used|
 |Playback control|"Play" sentences which only want to resume or skip are handled as a new request|The AI also classifies the request. Resume, next, previous, pause and stop are done on the players in the target area|
+|Moving the music|Not supported|"Move the music to the kitchen" moves the queue of the player that is playing to the target (`Move music response`, `Nothing playing response`)|
 |Shuffle|Shuffle on/off per request|Same, but shuffle is not changed when you add to an existing queue|
 |Responses|Area, player and area+player responses|Same, plus `Not found`, `Playback control` and `Error` responses. `shuffle` and `enqueue` are available as variables, `<media_info>` is replaced by the title that was found|
 
@@ -225,7 +226,7 @@ The blueprint is located in the `llm-enhanced-local-assist-blueprint` folder of 
 |`expose_players`, `expose_areas`|`expose_names`|
 |`llm_prompt_*`, `llm_prompt`|`llm_instructions`|
 |`play_continuously`, `default_player`, responses, `trigger`, `combine_text`|Unchanged|
-|-|New: `max_tracks`, `area_players`, `enqueue`, `verify_media`, `artist_text`, `not_found_response`, `control_response`, `error_response`|
+|-|New: `max_tracks`, `area_players`, `enqueue`, `verify_media`, `artist_text`, `not_found_response`, `control_response`, `transfer_response`, `nothing_playing_response`, `error_response`|
 
 #### Switching from version 1
 
@@ -239,7 +240,10 @@ Add Bohemian Rhapsody by Queen to the queue in the living room
 Play the album that has the nude baby swimming in the water on the cover
 Shuffle jazz downstairs
 Continue playing in the bedroom
+Move the music to the kitchen
 ```
+
+The default trigger sentences also contain `(move|transfer|send) [the ]music to {query}` for moving the music. If you changed or translated the trigger sentences, add a sentence for it, for example `(verplaats|verhuis) de muziek naar {query}`.
 
 The `Usage` and `How the target for the media is determined` sections of option 2 above apply to version 2 as well.
 
