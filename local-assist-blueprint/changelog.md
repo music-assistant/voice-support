@@ -14,3 +14,5 @@
 
 * Added version 2 (`mass_assist_blueprint_v2_en.yaml`, English only for now). See the README for the differences with version 1
 * Version 1 is unchanged
+
+* Use `entity_name(fallback=true)` instead of the `friendly_name` attribute for player names, as `friendly_name` is being deprecated since the naming changes in Home Assistant 2026.11. The minimum Home Assistant version of version 2 is now 2026.11

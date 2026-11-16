@@ -72,7 +72,7 @@ blueprint:
     parallel requests are possible and podcasts, favorites and moving the queue
     were added.
   homeassistant:
-    min_version: 2025.8.0
+    min_version: 2026.11.0
   input:
     music_assistant_settings:
       name: Music Assistant playback
@@ -457,7 +457,7 @@ actions:
         {{ (n | regex_replace(radio_mode_regex, '', ignorecase=true) if radio_mode_regex else n) | trim }}
       named_players: >-
         {% set ns = namespace(p=[]) %}
-        {% for e in ma_players if target_name and state_attr(e, 'friendly_name') | lower == target_name | lower %}
+        {% for e in ma_players if target_name and entity_name(e, fallback=true) | lower == target_name | lower %}
           {% set ns.p = ns.p + [e] %}
         {% endfor %}
         {{ ns.p }}
@@ -517,11 +517,11 @@ actions:
       area_list: "{{ target_areas | map('area_name') | list }}"
       player_list: >-
         {% if named %}
-          {{ named_players | map('state_attr', 'friendly_name') | list }}
+          {{ named_players | map('entity_name', fallback=true) | list }}
         {% elif target_areas or not default_player %}
           {{ [] }}
         {% else %}
-          {{ [state_attr(default_player, 'friendly_name') or default_player] }}
+          {{ [entity_name(default_player, fallback=true) or default_player] }}
         {% endif %}
       area_info: >-
         {{ area_list[:-1] | join(', ') ~ ' ' ~ combine ~ ' ' ~ area_list[-1]
