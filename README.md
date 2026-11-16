@@ -194,6 +194,17 @@ The blueprint is located in the `llm-enhanced-local-assist-blueprint` folder of 
 
 [![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fmusic-assistant%2Fvoice-support%2Fblob%2Fmain%2Fllm-enhanced-local-assist-blueprint%2Fmass_llm_ai_task_assist_v2.yaml)
 
+#### When to use this instead of the built-in Search and Play intent
+
+Since Home Assistant 2025.6 the built-in `Search and Play` intent works with Music Assistant without any blueprint or LLM, see the [Music Assistant voice documentation](https://music-assistant.io/integration/voice/). For requests like "play Rumours in the kitchen" it is enough. Use this blueprint when you need something the built-in intent can't express:
+
+* Artist (and album) qualifiers, like "the album Rumours by Fleetwood Mac", and "the latest album by ..."
+* Shuffle, radio mode and queue actions (play next, add to the queue, replace the queue)
+* Checking the result against what was asked, and telling the user when nothing matching was found, instead of playing the first match
+* Moving the music that is playing to another player or area
+
+The sentence triggers of this blueprint take priority over built-in intents, so a sentence that matches one of them is handled by this blueprint. Sentences that don't match are still handled by the built-in intent.
+
 #### Requirements
 
 * Home Assistant 2025.8 or newer
