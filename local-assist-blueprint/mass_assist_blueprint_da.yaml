@@ -3,88 +3,79 @@ blueprint:
   name: Music Assistant - Local(only) Voice Support Blueprint
   source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_en.yaml
   description: ' ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+    # Afspil medier med stemmekommandoer
 
-    # Play media using voice commands
+    ### Opsætning af blueprint
 
-    ### Blueprint setup
+    #### Påkrævet
 
-    #### Required
+    * Vælg en `Default Player`, som skal bruges, når der ikke nævnes en afspiller i anmodningen, og anmodningen ikke kommer fra et område med en Music Assistant-afspiller.
 
-    * Set a `Default Player` to be used when no target is mentioned in the request
-    and the request doesn''t come from an area with a Music Assistant player.
+    #### Valgfrit
 
-    #### Optional
+    * Tilpas udløsersætningen, eller tilføj flere. Du kan også bruge dette til at oversætte sætningerne til dit eget sprog.
 
-    * Change the trigger sentence or add more, you can also use this to translate
-    the sentence to your own language.
-
-    * Change the responses or translate them to your own language.
+    * Tilpas svarene, eller oversæt dem til dit eget sprog.
 
 
-    ### Usage
+    ### Brug
 
-    All sentences must:
+    Alle sætninger skal:
 
-    * start with the words `Shuffle`, `Play` or `Listen to` followed by the item type `artist`/`track`/`album`/`playlist`/`radio`
-    and then the name of the item. If the sentence starts with `Shuffle`, the player that plays the request will also have the shuffle
-    option turned on, otherwise it will be turned off.
+    * starte med ordene Bland, Spil, Afspil eller Lyt til, efterfulgt af medietypen kunstner/nummer/album/spilleliste/radio og derefter navnet på mediet. Hvis sætningen starter med Bland, aktiveres shuffle-funktionen også på afspilleren. Ellers deaktiveres den.
 
-    * for album and track be optionally followed by `by [the] artist` and then the
-    artist name
+    * for album og nummer eventuelt efterfølges af af og derefter kunstnerens navn.
 
-    * then be optionally followed by an area name or device name
+    * eventuelt efterfølges af et områdenavn eller et enhedsnavn.
 
-    * then, for artist, track, album or playlist, be optionally followed by the phrase
-    `using radio mode`
+    * for kunstner, nummer, album eller spilleliste eventuelt efterfølges af udtrykket med radiotilstand.
 
-    #### Accepted variations
-
-    usage of the article `the` is optional
+    #### Accepterede variationer
 
     |Media type|Accepted variations|
 
     |---|---|
 
-    |`artist`|`band`, `group`|
+    |`kunstner`|`band`, `gruppe`|
 
-    |`track`|`song`|
+    |`nummer`|`sang`|
 
-    |`radio`|`radio station`, `radio`|
+    |`radio`|`radiostation`, `radio`|
 
-    |`playlist`||
+    |`spilleliste`||
 
 
     #### Examples
 
     ```
 
-    Play the artist Pink Floyd in the kitchen
-
-    Listen to album Jagged Little Pill in the study
-
-    Listen to the album Greatest Hits by the artist James Taylor in the kitchen
-
-    Play track New Years Day in the bedroom
-
-    Play track New Years Day in the bedroom using radio mode
-
-    Play the song A Hard Days Night by Billy Joel in the bedroom
-
-    Listen to the playlist Classic Rock in the study
-
-    Listen to the radio station BBC Radio 1 in the bedroom
-
-    Play the album Classical Nights on the Bedroom Sonos Speaker
-
-    Listen to the record Classical Nights on the Bedroom Sonos Speaker
-
-    Play the band U2
-
-    Shuffle songs by Muse.
-
-    Shuffle the album Classical Nights on the Bedroom Sonos Speaker
-
-    Play the audiobook Roadside Picnic
+    Afspil kunstneren Pink Floyd i køkkenet
+    
+    Lyt til albummet Jagged Little Pill i arbejdsværelset
+    
+    Lyt til albummet Greatest Hits af kunstneren James Taylor i køkkenet
+    
+    Spil nummeret New Years Day i soveværelset
+    
+    Spil nummeret New Years Day i soveværelset med radiotilstand
+    
+    Spil sangen A Hard Days Night af Billy Joel i soveværelset
+    
+    Lyt til listen Classic Rock i arbejdsværelset
+    
+    Lyt til radiostationen BBC Radio 1 i soveværelset
+    
+    Spil albummet Classical Nights på Bedroom Sonos Speaker
+    
+    Lyt til pladen Classical Nights på Bedroom Sonos Speaker
+    
+    Spil bandet U2
+    
+    Bland sange af Muse.
+    
+    Bland albummet Classical Nights på Bedroom Sonos Speaker
+    
+    Spil lydbogen Roadside Picnic
 
     ```'
   input:
