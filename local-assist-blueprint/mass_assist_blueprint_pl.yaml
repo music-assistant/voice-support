@@ -1,0 +1,386 @@
+blueprint:
+  domain: automation
+  name: Music Assistant - Lokalna obsługa głosowa (PL)
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_pl.yaml
+  description: ' ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+
+    # Odtwarzanie multimediów poleceniami głosowymi
+
+    Polska wersja blueprintu „Local(only) Voice Support” z repozytorium
+    [music-assistant/voice-support](https://github.com/music-assistant/voice-support).
+    Działa w pełni lokalnie (zdania niestandardowe Assist), bez chmury i bez LLM.
+
+    ### Konfiguracja blueprintu
+
+    #### Wymagane
+
+    * Ustaw `Domyślny odtwarzacz`, który zostanie użyty, gdy w poleceniu nie podano
+    celu, a polecenie nie pochodzi z obszaru, w którym jest odtwarzacz Music Assistant.
+
+    #### Opcjonalne
+
+    * Zmień zdania wyzwalające lub dodaj własne.
+
+    * Zmień treść odpowiedzi Assist.
+
+    * Włącz/wyłącz dopasowanie z uwzględnieniem odmiany (np. „w kuchni” → obszar „Kuchnia”).
+
+
+    ### Użycie
+
+    Każde zdanie musi:
+
+    * zaczynać się od czasownika: `Odtwórz`, `Zagraj`, `Puść`, `Włącz`, `Posłuchajmy`,
+    `Chcę posłuchać` (losowo: `Wymieszaj`, `Przetasuj` lub dodane słowo `losowo`),
+    a następnie typu: `album`/`utwór`/`wykonawcę`/`playlistę`/`radio`/`audiobook`
+    i nazwy pozycji. Jeśli w zdaniu pada `losowo`, `wymieszaj` lub `przetasuj`,
+    odtwarzacz włączy tryb losowy, w przeciwnym razie zostanie on wyłączony.
+
+    * dla albumu i utworu opcjonalnie zawierać `od`/`zespołu`/`wykonawcy`/`artysty`
+    i nazwę wykonawcy (najlepiej w mianowniku, np. „od Dawid Podsiadło”)
+
+    * następnie opcjonalnie zawierać `w`/`we`/`na` i nazwę obszaru lub odtwarzacza
+
+    * na końcu (dla wykonawcy, utworu, albumu i playlisty) opcjonalnie zawierać frazę
+    `w trybie radia`
+
+
+    #### Akceptowane warianty
+
+    |Typ|Warianty|
+
+    |---|---|
+
+    |album|`album(u)`, `płytę/płyty`, `epkę`, `singiel/singla`, `składankę`, `kompilację`|
+
+    |utwór|`utwór/utworu`, `piosenkę/piosenki`, `kawałek/kawałka`, `numer/numeru`, `nagranie`|
+
+    |wykonawca|`wykonawcę/wykonawcy`, `artystę/artysty`, `artystkę/artystki`, `zespół/zespołu`, `grupę/grupy`, `kapelę`, `muzykę od …`, `utwory od …`, `piosenki od …`|
+
+    |radio|`radio/radia`, `stację [radiową]`, `stacji [radiowej]`, `rozgłośnię`|
+
+    |playlista|`playlistę/playlisty`, `plejlistę`, `listę odtwarzania`|
+
+    |audiobook|`audiobook(a)`, `książkę [audio]`, `słuchowisko`|
+
+
+    #### Przykłady
+
+    ```
+
+    Zagraj wykonawcę Pink Floyd w kuchni
+
+    Posłuchajmy albumu Jagged Little Pill w gabinecie
+
+    Włącz album Greatest Hits od James Taylor w kuchni
+
+    Puść utwór New Years Day w sypialni
+
+    Puść utwór New Years Day w sypialni w trybie radia
+
+    Odtwórz piosenkę A Hard Days Night zespołu The Beatles w sypialni
+
+    Włącz playlistę Classic Rock w salonie
+
+    Włącz radio Nowy Świat w łazience
+
+    Odtwórz płytę Classical Nights na głośniku Sonos Sypialnia
+
+    Zagraj zespół Myslovitz
+
+    Wymieszaj utwory od Muse
+
+    Puść losowo album Classical Nights w sypialni
+
+    Odtwórz audiobook Piknik na skraju drogi
+
+    ```'
+  input:
+    default_player_entity_id_input:
+      name: Domyślny odtwarzacz
+      description: Odtwarzacz Music Assistant używany, gdy nie da się ustalić celu
+        z polecenia ani z obszaru satelity głosowego.
+      selector:
+        entity:
+          filter:
+          - integration: music_assistant
+            domain:
+            - media_player
+          multiple: false
+    matching_settings:
+      name: Dopasowanie nazw i tryb losowy
+      icon: mdi:text-search
+      collapsed: true
+      input:
+        fuzzy_match_input:
+          name: Uwzględniaj odmianę nazw
+          description: Gdy włączone, „w kuchni”, „w sypialni”, „na głośniku Sonos” zostaną
+            dopasowane do obszarów/odtwarzaczy „Kuchnia”, „Sypialnia”, „Głośnik Sonos”
+            (porównanie początków słów). Dokładne dopasowanie ma zawsze pierwszeństwo.
+          default: true
+          selector:
+            boolean: {}
+        merge_unknown_target_input:
+          name: Doklejaj nierozpoznany cel do tytułu
+          description: Gdy fraza po „w/we/na” nie pasuje do żadnego obszaru ani odtwarzacza,
+            zostanie potraktowana jako część tytułu (np. „Piknik na skraju drogi”).
+            Wyłącz, aby – jak w oryginale – ją pominąć i grać na odtwarzaczu z obszaru
+            satelity lub domyślnym.
+          default: true
+          selector:
+            boolean: {}
+        shuffle_words_input:
+          name: Słowa włączające tryb losowy
+          description: Wyrażenie regularne. Jeśli któreś z tych słów wystąpi w poleceniu
+            (poza samą nazwą pozycji), odtwarzacz włączy tryb losowy.
+          default: losowo|wymieszaj|przetasuj
+          selector:
+            text: {}
+    trigger_response_settings:
+      name: Zdania wyzwalające i odpowiedzi Assist
+      icon: mdi:chat
+      description: 'Tutaj możesz zmienić istniejące zdania wyzwalające lub dodać nowe.
+        Tekst w nawiasach kwadratowych [ ] jest opcjonalny. W nawiasach okrągłych ( )
+        rozdzielonych znakiem | podajesz warianty traktowane jako „lub”. { media_name }
+        to symbol wieloznaczny zawierający żądaną pozycję, { artist } – wykonawcę,
+        a { area_or_player_name } – obszar lub odtwarzacz Music Assistant.
+
+        Możesz też ustawić odpowiedź Assist. Używa ona szablonów Jinja, w których dostępne
+        są m.in. zmienne media_name, shuffle, mass_player_name i mass_player_entity_id.'
+      collapsed: true
+      input:
+        album_trigger:
+          name: Zdania – album
+          description: Zdania wyzwalające odtwarzanie konkretnego albumu.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[losowo ](odtwórz|odtwarzaj|zagraj|graj|puść|włącz|posłuchajmy|chcę posłuchać|wymieszaj|przetasuj)
+            [losowo ](album|albumu|płytę|płyty|epkę|epki|singiel|singla|składankę|składanki|kompilację|kompilacji)
+            {media_name} [(od|od zespołu|od wykonawcy|od artysty|zespołu|wykonawcy|artysty|artystki|grupy)
+            {artist}] [(w|we|na) {area_or_player_name}][ (w trybie radia|z trybem radia|w trybie radiowym|jako radio)]'
+        track_trigger:
+          name: Zdania – utwór
+          description: Zdania wyzwalające odtwarzanie konkretnego utworu.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[losowo ](odtwórz|odtwarzaj|zagraj|graj|puść|włącz|posłuchajmy|chcę posłuchać|wymieszaj|przetasuj)
+            [losowo ](utwór|utworu|piosenkę|piosenki|kawałek|kawałka|numer|numeru|nagranie|nagrania)
+            {media_name} [(od|od zespołu|od wykonawcy|od artysty|zespołu|wykonawcy|artysty|artystki|grupy)
+            {artist}] [(w|we|na) {area_or_player_name}][ (w trybie radia|z trybem radia|w trybie radiowym|jako radio)]'
+        artist_trigger:
+          name: Zdania – wykonawca
+          description: Zdania wyzwalające odtwarzanie muzyki konkretnego wykonawcy.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[losowo ](odtwórz|odtwarzaj|zagraj|graj|puść|włącz|posłuchajmy|chcę posłuchać|wymieszaj|przetasuj)
+            [losowo ](wykonawcę|wykonawcy|artystę|artysty|artystkę|artystki|zespół|zespołu|grupę|grupy|kapelę|kapeli|(muzykę|utwory|piosenki|kawałki)
+            (od|zespołu|wykonawcy|artysty|artystki|grupy)) {media_name} [(w|we|na) {area_or_player_name}][
+            (w trybie radia|z trybem radia|w trybie radiowym|jako radio)]'
+        audiobook_trigger:
+          name: Zdania – audiobook
+          description: Zdania wyzwalające odtwarzanie audiobooka.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (odtwórz|odtwarzaj|puść|włącz|posłuchajmy|chcę posłuchać) (audiobook|audiobooka|audiobooku|książkę
+            [audio]|książki [audio]|słuchowisko|słuchowiska) {media_name} [(w|we|na) {area_or_player_name}]
+        radio_trigger:
+          name: Zdania – radio
+          description: Zdania wyzwalające odtwarzanie konkretnej stacji radiowej.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - (odtwórz|odtwarzaj|zagraj|graj|puść|włącz|posłuchajmy|chcę posłuchać) (radio|radia|stację
+            [radiową]|stacji [radiowej]|rozgłośnię [radiową]|rozgłośni [radiowej]) {media_name} [(w|we|na)
+            {area_or_player_name}]
+        playlist_trigger:
+          name: Zdania – playlista
+          description: Zdania wyzwalające odtwarzanie konkretnej playlisty.
+          selector:
+            text:
+              multiline: false
+              multiple: true
+          default:
+          - '[losowo ](odtwórz|odtwarzaj|zagraj|graj|puść|włącz|posłuchajmy|chcę posłuchać|wymieszaj|przetasuj)
+            [losowo ](playlistę|playlisty|playlista|plejlistę|plejlisty|listę odtwarzania|listy odtwarzania)
+            {media_name} [(w|we|na) {area_or_player_name}][ (w trybie radia|z trybem radia|w trybie radiowym|jako radio)]'
+        response_input:
+          name: Odpowiedź Assist
+          description: Odpowiedź, którą zwróci Assist.
+          selector:
+            text:
+              multiline: false
+              multiple: false
+          default: '{{ ''Losowo odtwarzam'' if shuffle else ''Odtwarzam'' }} {{ media_name }}
+            na {{ ''odtwarzaczach'' if mass_player_entity_id | count > 1 else ''odtwarzaczu''
+            }} {{ mass_player_name }}'
+triggers:
+- trigger: conversation
+  command: !input album_trigger
+  id: album
+- trigger: conversation
+  command: !input track_trigger
+  id: track
+- trigger: conversation
+  command: !input artist_trigger
+  id: artist
+- trigger: conversation
+  command: !input audiobook_trigger
+  id: audiobook
+- trigger: conversation
+  command: !input radio_trigger
+  id: radio
+- trigger: conversation
+  command: !input playlist_trigger
+  id: playlist
+actions:
+- alias: Zdefiniuj zmienne używane w automatyzacji
+  variables:
+    version: 20250404-pl1
+    default_player_entity_id: !input default_player_entity_id_input
+    fuzzy_match: !input fuzzy_match_input
+    merge_unknown_target: !input merge_unknown_target_input
+    shuffle_words: !input shuffle_words_input
+    radio_phrase: (w trybie radia|z trybem radia|w trybie radiowym|jako radio)
+    sentence: '{{ trigger.sentence | default('''') | lower }}'
+    radio_requested: '{{ sentence is search(radio_phrase) }}'
+    # Oczyszczenie slotów z frazy trybu radia i końcowej interpunkcji
+    # (na wypadek, gdyby symbol wieloznaczny „połknął” końcówkę zdania).
+    slot_media: >-
+      {{ (trigger.slots.media_name | default(''))
+         | regex_replace('\\s*' ~ radio_phrase ~ '\\s*$', '', ignorecase=true)
+         | regex_replace('[\\s.,!?]+$', '') | trim }}
+    slot_artist: >-
+      {{ (trigger.slots.artist | default(''))
+         | regex_replace('\\s*' ~ radio_phrase ~ '\\s*$', '', ignorecase=true)
+         | regex_replace('[\\s.,!?]+$', '') | trim }}
+    area_or_player_name: >-
+      {{ (trigger.slots.area_or_player_name | default(''))
+         | regex_replace('\\s*' ~ radio_phrase ~ '\\s*$', '', ignorecase=true)
+         | regex_replace('[\\s.,!?]+$', '')
+         | regex_replace('^(trybie radia|trybem radia|trybie radiowym)$', '', ignorecase=true) | trim }}
+    # „Puść piosenki od Muse” może zostać dopasowane jako utwór „od Muse” –
+    # w takim przypadku traktujemy to jako żądanie wykonawcy.
+    artist_prefix: ^(od|zespołu|wykonawcy|artysty|artystki|grupy)\s+
+    trigger_id: >-
+      {{ 'artist' if trigger.id == 'track' and not slot_artist
+         and slot_media | lower is match(artist_prefix) else trigger.id }}
+    media_base: >-
+      {{ slot_media | regex_replace(artist_prefix, '', ignorecase=true)
+         if trigger_id != trigger.id else slot_media }}
+    ma_players: >-
+      {{ integration_entities('music_assistant') | select('match', 'media_player\\.') | list }}
+    player_entity_id_by_player_name: >-
+      {%- set spoken = area_or_player_name | lower -%}
+      {%- set sw = spoken.split() -%}
+      {%- set ns = namespace(exact=[], fuzzy=[]) -%}
+      {%- if spoken -%}
+        {%- for e in ma_players -%}
+          {%- set n = (state_attr(e, 'friendly_name') or '') | lower | trim -%}
+          {%- set nw = n.split() -%}
+          {%- if n == spoken -%}
+            {%- set ns.exact = ns.exact + [e] -%}
+          {%- elif fuzzy_match and nw | count > 0 and nw | count == sw | count -%}
+            {%- set m = namespace(ok=true) -%}
+            {%- for i in range(nw | count) -%}
+              {%- set w = nw[i] -%}
+              {%- if not sw[i].startswith(w[:([3, (w | length) - 3] | max)]) -%}
+                {%- set m.ok = false -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if m.ok -%}{%- set ns.fuzzy = ns.fuzzy + [e] -%}{%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ ns.exact or ns.fuzzy }}
+    matched_area_ids: >-
+      {%- set spoken = area_or_player_name | lower -%}
+      {%- set sw = spoken.split() -%}
+      {%- set ns = namespace(exact=[], fuzzy=[]) -%}
+      {%- if spoken -%}
+        {%- for a in areas() -%}
+          {%- set n = (area_name(a) or '') | lower | trim -%}
+          {%- set nw = n.split() -%}
+          {%- if n == spoken -%}
+            {%- set ns.exact = ns.exact + [a] -%}
+          {%- elif fuzzy_match and nw | count > 0 and nw | count == sw | count -%}
+            {%- set m = namespace(ok=true) -%}
+            {%- for i in range(nw | count) -%}
+              {%- set w = nw[i] -%}
+              {%- if not sw[i].startswith(w[:([3, (w | length) - 3] | max)]) -%}
+                {%- set m.ok = false -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if m.ok -%}{%- set ns.fuzzy = ns.fuzzy + [a] -%}{%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ ns.exact or ns.fuzzy }}
+    player_entity_id_by_area_name: >-
+      {{ matched_area_ids | map('area_entities') | sum(start=[]) | select('in', ma_players) | list }}
+    # Jeśli fraza po „w/na” nie jest ani obszarem, ani odtwarzaczem, to najpewniej
+    # była częścią tytułu (np. „Piknik na skraju drogi”) – doklejamy ją z powrotem.
+    target_unknown: >-
+      {{ merge_unknown_target and area_or_player_name != ''
+         and not player_entity_id_by_player_name and not matched_area_ids }}
+    media_name: >-
+      {%- set s = trigger.sentence | default('') -%}
+      {%- set i = s.lower().find(media_base.lower()) -%}
+      {%- set j = s.lower().rfind(area_or_player_name.lower()) -%}
+      {%- if target_unknown and not slot_artist and i >= 0 and j > i -%}
+        {{ s[i:j + (area_or_player_name | length)] }}
+      {%- else -%}
+        {{ media_base }}
+      {%- endif -%}
+    artist_name: >-
+      {%- set s = trigger.sentence | default('') -%}
+      {%- set i = s.lower().find(slot_artist.lower()) if slot_artist else -1 -%}
+      {%- set j = s.lower().rfind(area_or_player_name.lower()) -%}
+      {%- if target_unknown and i >= 0 and j > i -%}
+        {{ s[i:j + (area_or_player_name | length)] }}
+      {%- else -%}
+        {{ slot_artist }}
+      {%- endif -%}
+    shuffle: >-
+      {{ trigger.id not in ['radio', 'audiobook']
+         and sentence | replace(media_name | lower, ' ') is search('(?<!\\w)(' ~ shuffle_words ~ ')(?!\\w)') }}
+    action_data:
+      media_id: '{{ media_name }}'
+      media_type: '{{ trigger_id }}'
+      artist: '{{ artist_name }}'
+      radio_mode: '{{ radio_requested and trigger_id in [''album'', ''track'', ''artist'', ''playlist''] }}'
+    player_entity_id_by_assist_area: >-
+      {%- set a = area_id(trigger.device_id) if trigger.device_id else none -%}
+      {{ area_entities(a) | select('in', ma_players) | list if a else [] }}
+    mass_player_entity_id: >-
+      {{ player_entity_id_by_player_name or player_entity_id_by_area_name
+         or player_entity_id_by_assist_area or [default_player_entity_id] }}
+    mass_player_name: >-
+      {{ mass_player_entity_id | map('state_attr', 'friendly_name') | join(', ') }}
+- alias: Wyślij multimedia do wybranego odtwarzacza Music Assistant
+  action: music_assistant.play_media
+  data: '{{ dict(action_data.items() | selectattr(''1'')) }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Włącz/wyłącz tryb losowy na odtwarzaczu Music Assistant
+  action: media_player.shuffle_set
+  data:
+    shuffle: '{{ shuffle }}'
+  target:
+    entity_id: '{{ mass_player_entity_id }}'
+- alias: Zwróć odpowiedź
+  set_conversation_response: !input response_input
+mode: single
